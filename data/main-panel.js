@@ -40,7 +40,12 @@ function getCommonTitle (feeds) {
 }
 
 self.port.on("show", function (page) {
-	menu.parentNode.removeChild(menu.previousSibling);
+	/* Remove title if present. */
+	var titles = document.getElementsByTagName("h1");
+	if (titles.length) {
+		titles[0].parentNode.removeChild(titles[0]);
+	}
+	
 	menu.innerHTML = "";
 	var commonTitle = getCommonTitle(page.feeds);
 	var commonTitleLength;
