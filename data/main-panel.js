@@ -23,6 +23,9 @@ function addTitle (text) {
 }
 
 function getCommonTitle (feeds) {
+	if (feeds.length <= 1) {
+		return "";
+	}
 	var firstTitle = feeds[0].title;
 	outer:
 	for (length = 0; length < firstTitle.length; ++length) {
