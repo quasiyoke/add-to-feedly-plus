@@ -1,9 +1,9 @@
 {
-  "name": "add-to-feedly",
-  "title": "Add to feedly",
-  "id": "jid1-YZsgHbPHarNxRg",
-  "description": "This extension allows you to add your favorite sites to feedly.",
-  "author": "Saeed Moghadam <phpro.ir@gmail.com>",
+  "name": "add-to-feedly-plus",
+  "title": "Add to Feedly Plus",
+  "id": "jid1-lpXbkGi1kHPDGQ",
+  "description": "This extension allows you to add your favorite sites' feeds to Feedly. Despite from original add-on this one handles multiple RSS feeds too.",
+  "author": "Saeed Moghadam <phpro.ir@gmail.com>, Pyotr Ermishkin <quasiyoke@gmail.com>",
   "license": "MPL 2.0",
-  "version": "1.4"
+  "version": "1.5"
 }
