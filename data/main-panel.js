@@ -4,14 +4,17 @@ function addFeed (feed) {
 	var menuItem = document.createElement("li");
 	menuItem.setAttribute("class", "menu-item");
 	menu.appendChild(menuItem);
-	var button = document.createElement("button");
+	var button = document.createElement("a");
+	button.setAttribute("href", feed.url);
 	button.setAttribute("title", feed.title);
+	button.setAttribute("class", "button");
 	menuItem.appendChild(button);
 	var buttonWrap = document.createElement("div");
 	button.appendChild(buttonWrap);
 	buttonWrap.appendChild(document.createTextNode(feed.title));
 	buttonWrap.setAttribute("class", "button-wrap");
 	button.addEventListener("click", function (e) {
+		e.preventDefault();
 		self.port.emit("feedChosen", feed.url);
 	});
 }
@@ -75,7 +78,7 @@ Feed.getCommonTitle = function (feeds) {
 		} else if (match = /^(.+)\s[^\s]+\s*$/.exec(commonTitle)) {
 			commonTitle = match[1];
 		} else {
-			commonTitle = '';
+			commonTitle = "";
 		}
 	}
 	return commonTitle;
