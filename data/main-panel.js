@@ -72,7 +72,7 @@ Feed.getCommonTitle = function (feeds) {
 			 *
 			 * ...common title will be: "John Doe's"
 			 */
-		} else if (match = /^(.*)\s[^\s]+\s*$/.exec(commonTitle)) {
+		} else if (match = /^(.+)\s[^\s]+\s*$/.exec(commonTitle)) {
 			commonTitle = match[1];
 		} else {
 			commonTitle = '';
@@ -114,7 +114,7 @@ self.port.on("show", function (page) {
 		titles[0].parentNode.removeChild(titles[0]);
 	}
 	
-	menu.innerHTML = "";
+	menu.textContent = "";
 	var commonTitle = Feed.getCommonTitle(page.feeds);
 	var commonTitleLength;
 	if (commonTitle) {
