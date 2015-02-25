@@ -5,5 +5,5 @@
   "description": "This extension allows you to add your favorite sites' feeds to Feedly. Despite from original add-on this one handles multiple RSS feeds too.",
   "author": "Saeed Moghadam <phpro.ir@gmail.com>, Pyotr Ermishkin <quasiyoke@gmail.com>",
   "license": "MPL 2.0",
-  "version": "1.7"
+  "version": "1.8"
 }
