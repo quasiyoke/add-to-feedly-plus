@@ -68,6 +68,46 @@ Feed.getCommonTitle = function (feeds) {
 		if (match) {
 			commonTitle = match[1];
 			/*
+			 * For such feeds list with common title delimited with hyphen-minus:
+			 *
+			 * - John Doe's website - Blog
+			 * - John Doe's website - Blog comments
+			 *
+			 * ...common title will be: "John Doe's website -"
+			 */
+		} else if (match = /^(.+\-)[^\-]+$/.exec(commonTitle)) {
+			commonTitle = match[1];
+			/*
+			 * For such feeds list with common title delimited with figure dash:
+			 *
+			 * - John Doe's website ‒ Blog
+			 * - John Doe's website ‒ Blog comments
+			 *
+			 * ...common title will be: "John Doe's website ‒"
+			 */
+		} else if (match = /^(.+\u2012)[^\u2012]+$/.exec(commonTitle)) {
+			commonTitle = match[1];
+			/*
+			 * For such feeds list with common title delimited with en dash:
+			 *
+			 * - John Doe's website – Blog
+			 * - John Doe's website – Blog comments
+			 *
+			 * ...common title will be: "John Doe's website –"
+			 */
+		} else if (match = /^(.+\u2013)[^\u2013]+$/.exec(commonTitle)) {
+			commonTitle = match[1];
+			/*
+			 * For such feeds list with common title delimited with em dash:
+			 *
+			 * - John Doe's website — Blog
+			 * - John Doe's website — Blog comments
+			 *
+			 * ...common title will be: "John Doe's website —"
+			 */
+		} else if (match = /^(.+\u2014)[^\u2014]+$/.exec(commonTitle)) {
+			commonTitle = match[1];
+			/*
 			 * For such feeds list:
 			 *
 			 * - John Doe's blog
@@ -122,8 +162,8 @@ self.port.on("show", function (page) {
 	var commonTitleLength;
 	if (commonTitle) {
 		commonTitleLength = commonTitle.length;
-		/* Trim trailing » char. */
-		var match = /^(.+)»\s*/.exec(commonTitle);
+		/* Trim trailing delimiter char. */
+		var match = /^(.+)[»-\u2012\u2013\u2014]\s*/.exec(commonTitle); // Quotation mark, hyphen-minus, figure dash, en dash, em dash, respectively.
 		if (match) {
 			commonTitle = match[1];
 		}
