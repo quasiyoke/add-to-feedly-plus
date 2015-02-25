@@ -68,24 +68,14 @@ Feed.getCommonTitle = function (feeds) {
 		if (match) {
 			commonTitle = match[1];
 			/*
-			 * For such feeds list with common title delimited with hyphen-minus:
+			 * For such feeds list with common title delimited with em dash:
 			 *
-			 * - John Doe's website - Blog
-			 * - John Doe's website - Blog comments
+			 * - John Doe's website — Blog
+			 * - John Doe's website — Blog comments
 			 *
-			 * ...common title will be: "John Doe's website -"
+			 * ...common title will be: "John Doe's website —"
 			 */
-		} else if (match = /^(.+\-)[^\-]+$/.exec(commonTitle)) {
-			commonTitle = match[1];
-			/*
-			 * For such feeds list with common title delimited with figure dash:
-			 *
-			 * - John Doe's website ‒ Blog
-			 * - John Doe's website ‒ Blog comments
-			 *
-			 * ...common title will be: "John Doe's website ‒"
-			 */
-		} else if (match = /^(.+\u2012)[^\u2012]+$/.exec(commonTitle)) {
+		} else if (match = /^(.+\u2014)[^\u2014]+$/.exec(commonTitle)) {
 			commonTitle = match[1];
 			/*
 			 * For such feeds list with common title delimited with en dash:
@@ -98,14 +88,24 @@ Feed.getCommonTitle = function (feeds) {
 		} else if (match = /^(.+\u2013)[^\u2013]+$/.exec(commonTitle)) {
 			commonTitle = match[1];
 			/*
-			 * For such feeds list with common title delimited with em dash:
+			 * For such feeds list with common title delimited with figure dash:
 			 *
-			 * - John Doe's website — Blog
-			 * - John Doe's website — Blog comments
+			 * - John Doe's website ‒ Blog
+			 * - John Doe's website ‒ Blog comments
 			 *
-			 * ...common title will be: "John Doe's website —"
+			 * ...common title will be: "John Doe's website ‒"
 			 */
-		} else if (match = /^(.+\u2014)[^\u2014]+$/.exec(commonTitle)) {
+		} else if (match = /^(.+\u2012)[^\u2012]+$/.exec(commonTitle)) {
+			commonTitle = match[1];
+			/*
+			 * For such feeds list with common title delimited with hyphen-minus:
+			 *
+			 * - John Doe's website - Blog
+			 * - John Doe's website - Blog comments
+			 *
+			 * ...common title will be: "John Doe's website -"
+			 */
+		} else if (match = /^(.+\-)[^\-]+$/.exec(commonTitle)) {
 			commonTitle = match[1];
 			/*
 			 * For such feeds list:
