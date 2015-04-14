@@ -23,7 +23,14 @@ self.port.on("processPage", function () {
 	
 	var links = document.getElementsByTagName("link"); 
 	for (var i = 0; i < links.length; ++i)	{
-		if ("application/rss+xml" === links[i].getAttribute("type"))	{
+		var linkType = links[i].getAttribute("type")
+		// All MIME list courtesy to Robert MacLean on Stack Overflow
+		// http://stackoverflow.com/a/7001617/2449800
+		if ("application/rss+xml"  === linkType ||
+		    "application/rdf+xml"  === linkType ||
+		    "application/atom+xml" === linkType ||
+		    "application/xml"      === linkType ||
+		    "text/xml"             === linkType)	{
 			page.pushFeed({
 				title: links[i].getAttribute("title"),
 				url: links[i].href
