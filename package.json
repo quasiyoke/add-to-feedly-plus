@@ -1,9 +1,32 @@
 {
   "name": "add-to-feedly-plus",
   "title": "Add to Feedly Plus",
-  "id": "jid1-lpXbkGi1kHPDGQ",
   "description": "This extension allows you to add your favorite sites' feeds to Feedly. Despite from original add-on this one handles multiple RSS feeds too.",
-  "author": "Saeed Moghadam <phpro.ir@gmail.com>, Pyotr Ermishkin <quasiyoke@gmail.com>, Yufan Lou <loganlyf@gmail.com>",
+  "author": "Petr Ermishkin <quasiyoke@gmail.com> (https://quasiyoke.me)",
+  "contributors": [
+    "Saeed Moghadam <phpro.ir@gmail.com>",
+    "Yufan Lou <loganlyf@gmail.com>"
+  ],
   "license": "MPL 2.0",
-  "version": "1.9"
+  "version": "2.0.0",
+  "keywords": [
+    "RSS",
+    "Feedly"
+  ],
+  "repository": "https://github.com/quasiyoke/add-to-feedly-plus",
+  "bugs": "https://github.com/quasiyoke/add-to-feedly-plus/issues",
+  "homepage": "https://quasiyoke.me/en/add-to-feedly-plus/",
+  "private": true,
+  "scripts": {
+    "build": "parcel build src/index.js",
+    "test": "npm run test:lint",
+    "test:lint": "eslint src"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "parcel-bundler": "^1.12.3"
+  }
 }
