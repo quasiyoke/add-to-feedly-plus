@@ -1,0 +1,22 @@
+{
+  "manifest_version": 2,
+  "name": "add-to-feedly-plus",
+  "version": "2.0",
+  "description": "This extension allows you to add your favorite sites' feeds to Feedly. Despite from original add-on this one handles multiple RSS feeds too.",
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "64": "assets/icon-64.png"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": [
+      "dist/index.js"
+    ]
+  }],
+  "applications": {
+    "gecko": {
+      "id": "add-to-feedly-plus@quasiyoke.me"
+    }
+  }
+}
