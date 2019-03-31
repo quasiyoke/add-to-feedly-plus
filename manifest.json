@@ -28,7 +28,6 @@
     "default_icon": {
       "19": "assets/icon.svg"
     },
-    "default_title": "Add this site's RSS to Feedly",
     "browser_style": true
   }
 }

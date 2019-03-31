@@ -1,27 +1,7 @@
-// const { ToggleButton } = require('sdk/ui/button/toggle');
-// const tabs = require('sdk/tabs');
-// const browserWindows = require('sdk/windows').browserWindows;
-// const data = require('sdk/self').data;
-// const panel = require('sdk/panel');
-
 /**
- * Stores info about current tab's page.
- *
- * Object containing the following keys:
- * {Array} feeds: array, containing page's feeds in such format:
- *   [{title: 'Example website feed', url: 'http://example.com/feed' }, ... ]
- * {String} title: Title of the webpage.
+ * This file is executed once when the extension was loaded.
  */
-const BUTTON_DISABLED_ICON = {
-  16: './icon-16-d.png',
-  32: './icon-32-d.png',
-  64: './icon-64-d.png',
-};
-const BUTTON_ENABLED_ICON = {
-  16: './icon-16.png',
-  32: './icon-32.png',
-  64: './icon-64.png',
-};
+
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
 
 function onButtonChange(unusedState) {
@@ -36,29 +16,13 @@ function onButtonChange(unusedState) {
   }
 }
 
-/**
- *  Create Feedly button in toolbar: disabled by default.
- */
-// const button = ToggleButton({
-//   id: 'add-to-feedly',
-//   label: BUTTON_LABEL_DEFAULT,
-//   badgeColor: '#00aaaa',
-//   icon: BUTTON_DISABLED_ICON,
-//   onChange: onButtonChange,
-// });
-
 function onMainPanelShow () {
   mainPanel.port.emit('show', page);
 }
 
-// const mainPanel = panel.Panel({
-//   contentURL: data.url('main-panel.html'),
-//   contentScriptFile: data.url('main-panel.js'),
-//   onHide() {
-//     button.checked = false;
-//   },
-//   onShow: onMainPanelShow,
-// });
+function showPopup() {
+  browser.pageAction.openPopup();
+}
 
 function enableButton(tabId) {
   browser.pageAction.show(tabId);
@@ -84,7 +48,6 @@ function createButtonLabel(feeds, pageTitle) {
 
   return `${BUTTON_LABEL_DEFAULT} (${feeds.length})`;
 }
-// disableButton();
 
 // mainPanel.port.on('feedChosen', (url) => {
 //   button.checked = false;
@@ -93,35 +56,88 @@ function createButtonLabel(feeds, pageTitle) {
 // });
 
 // tabs.on('open', (tab) => {
-//   tab.on('ready', onTabReady);
+//   tab.on('ready', onContentScriptReady);
 // });
-// tabs.on('activate', onTabReady);
+// tabs.on('activate', onContentScriptReady);
+
+function openFeed(url) {
+  browser.tabs.create({
+    url: `https://feedly.com/i/subscription/feed/${url}`,
+  });
+}
+
+function onButtonClicked(
+  {
+    feeds,
+    pageTitle,
+  },
+  unusedTab,
+) {
+  if (feeds.length === 1) {
+    openFeed(feeds[0].url);
+  } else {
+    showPopup();
+  }
+}
+
+let buttonEventsHandler;
+
+function dispatchButtonEvents(feedsInfo) {
+  if (buttonEventsHandler) {
+    browser.pageAction.onClicked.removeListener(buttonEventsHandler);
+  }
+
+  buttonEventsHandler = onButtonClicked.bind(null, feedsInfo);
+  browser.pageAction.onClicked.addListener(buttonEventsHandler);
+}
+
+function setPopup(tabId) {
+  browser.pageAction.setPopup({
+    tabId,
+    popup: '../assets/popup.html',
+  });
+}
 
 /**
- * This event handler is triggered when contentScript reports about RSS links on the page.
+ * This event handler is triggered when contentScript reports about feeds on the page.
  */
-function onContentScriptMessage(sender, {
+function onContentScriptMessage(tabId, {
   feeds,
   title: pageTitle,
 }) {
-  const { tab: { id: tabId } } = sender;
-  console.log('Extension message:', sender, pageTitle, feeds, tabId);
+  console.log('Extension message:', pageTitle, feeds, tabId);
 
   if (feeds.length > 0) {
     enableButton(tabId);
-  } else {
-    disableButton(tabId);
+
+    if (feeds.length > 1) {
+      setPopup(tabId);
+    }
   }
 
   setButtonLabel(tabId, createButtonLabel(feeds, pageTitle));
+  dispatchButtonEvents({
+    feeds,
+    pageTitle,
+  });
 }
 
-function onTabReady (port) {
-  port.onMessage.addListener(onContentScriptMessage.bind(null, port.sender));
+function removePopup(tabId) {
+  browser.pageAction.setPopup({
+    tabId,
+    popup: null,
+  })
 }
 
-function openFeed (url) {
-  tabs.open(`https://feedly.com/i/subscription/feed/${url}`);
+function onContentScriptReady(port) {
+  const { sender: { tab: { id: tabId } } } = port;
+  port.onMessage.addListener(onContentScriptMessage.bind(null, tabId));
+  disableButton(tabId);
+  removePopup(tabId);
 }
 
-browser.runtime.onConnect.addListener(onTabReady);
+function dispatchEvents() {
+  browser.runtime.onConnect.addListener(onContentScriptReady);
+}
+
+dispatchEvents();

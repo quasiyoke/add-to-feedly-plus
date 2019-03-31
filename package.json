@@ -18,7 +18,7 @@
   "homepage": "https://quasiyoke.me/en/add-to-feedly-plus/",
   "private": true,
   "scripts": {
-    "build": "parcel build src/background.js src/content.js",
+    "build": "parcel build src/background.js src/content.js src/popup.js --no-minify",
     "test": "npm run test:lint",
     "test:lint": "eslint src"
   },

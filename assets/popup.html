@@ -1,72 +1,73 @@
 <html>
   <head>
     <style type="text/css" media="all">
-	  html {
-	  margin: 0;
-	  padding: 0;
-	  }
-	  
+    html {
+    margin: 0;
+    padding: 0;
+    }
+    
       body {
-	  margin: 0;
+    margin: 0;
       background: #fff;
-	  padding: .5em .6em;
-	  box-sizing: padding-box;
-	  font-size: 10pt;
-	  overflow-x: hidden;
+    padding: .5em .6em;
+    box-sizing: padding-box;
+    font-size: 10pt;
+    overflow-x: hidden;
       }
 
-	  h1 {
-	  line-height: .9;
-	  font-size: 1.2em;
-	  margin: .7em 0 .4em;
-	  }
+    h1 {
+    line-height: .9;
+    font-size: 1.2em;
+    margin: .7em 0 .4em;
+    }
 
-	  .button:link, .button:visited {
-	  text-decoration: none;
-	  display: block;
-	  border: none;
-	  box-sizing: border-box;
-	  background: linear-gradient(to top, rgba(221,221,221,1) 0%,rgba(237,237,237,1) 100%);
-	  color: #000;
-	  padding: .4em .6em;
-	  width: 100%;
-	  border-radius: .2em;
-	  font-size: 12pt;
-	  text-align: left;
-	  }
+    .button:link, .button:visited {
+    text-decoration: none;
+    display: block;
+    border: none;
+    box-sizing: border-box;
+    background: linear-gradient(to top, rgba(221,221,221,1) 0%,rgba(237,237,237,1) 100%);
+    color: #000;
+    padding: .4em .6em;
+    width: 100%;
+    border-radius: .2em;
+    font-size: 12pt;
+    text-align: left;
+    }
 
-	  .button-wrap {
-	  margin: 0 auto;
-	  width: 100%;
-	  overflow: hidden;
-	  text-overflow: ellipsis;
-	  white-space: nowrap;
-	  }
-	  
-	  .button:hover {
-	  background: #ccc;
-	  }
-	  
-	  .button:active {
-	  background: #fff;
-	  }
+    .button-wrap {
+    margin: 0 auto;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    }
+    
+    .button:hover {
+    background: #ccc;
+    }
+    
+    .button:active {
+    background: #fff;
+    }
 
-	  .button::-moz-focus-inner {
-	  border: 0;
-	  }
-	  
-	  ul#menu {
-	  list-style: none;
-	  margin: 0;
-	  padding: 0
-	  }
+    .button::-moz-focus-inner {
+    border: 0;
+    }
+    
+    .menu {
+    list-style: none;
+    margin: 0;
+    padding: 0
+    }
 
-	  .menu-item + .menu-item {
-	  margin-top: .15em;
-	  }
+    .menu-item + .menu-item {
+    margin-top: .15em;
+    }
     </style>
+    <script src="../dist/popup.js"></script>
   </head>
   <body>
-	<ul id="menu"></ul>
+    <ul class="menu"></ul>
   </body>
 </html>
