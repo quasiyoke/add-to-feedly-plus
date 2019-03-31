@@ -9,6 +9,7 @@ module.exports = {
   rules: {
     'function-paren-newline': ['error', 'consistent'],
     'import/prefer-default-export': 'off',
+    'max-len': ['error', 200],
     'no-await-in-loop': 'off',
     'no-continue': 'off',
     'no-unused-vars': ['error', {
