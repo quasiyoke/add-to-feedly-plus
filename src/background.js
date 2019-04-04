@@ -4,13 +4,14 @@
 
 import {
   onMessage,
-  sendMessage,
   setPopupContent,
 } from './messages';
+import { createSubscriptionUrl } from './util';
 
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
 
-let currentPageInfo;
+const tabs = {};
+let currentTabId;
 
 function onButtonChange(unusedState) {
   this.state('window', null);
@@ -71,7 +72,7 @@ function createButtonLabel(feeds, pageTitle) {
 
 function openFeed(url) {
   browser.tabs.create({
-    url: `https://feedly.com/i/subscription/feed/${url}`,
+    url: createSubscriptionUrl(url),
   });
 }
 
@@ -107,23 +108,23 @@ function setPopup(tabId) {
   });
 }
 
-/**
- * This event handler is triggered when contentScript reports about feeds on the page.
- */
-function onContentScriptMessage(tabId, { payload: pageInfo }) {
-  currentPageInfo = pageInfo;
-  const {
-    feeds,
-    title: pageTitle,
-  } = pageInfo;
-  console.log('Extension message:', pageTitle, feeds, tabId);
+function removePopup(tabId) {
+  browser.pageAction.setPopup({
+    tabId,
+    popup: null,
+  });
+}
 
+function applyPageInfo(tabId, { feeds, pageTitle }) {
   if (feeds.length > 0) {
     enableButton(tabId);
 
     if (feeds.length > 1) {
       setPopup(tabId);
     }
+  } else {
+    disableButton(tabId);
+    removePopup(tabId);
   }
 
   setButtonLabel(tabId, createButtonLabel(feeds, pageTitle));
@@ -133,25 +134,76 @@ function onContentScriptMessage(tabId, { payload: pageInfo }) {
   });
 }
 
-function removePopup(tabId) {
-  browser.pageAction.setPopup({
-    tabId,
-    popup: null,
-  });
+/**
+ * This event handler is triggered when contentScript reports about feeds on the page.
+ */
+function onContentScriptMessage(tabId, { payload: pageInfo }) {
+  const tabInfo = tabs[tabId];
+
+  if (tabInfo) {
+    tabInfo.pageInfo = pageInfo;
+  }
+
+  applyPageInfo(tabId, pageInfo);
+}
+
+function ensureTabFlushed(tabId) {
+  const tabInfo = tabs[tabId];
+
+  if (!tabInfo) {
+    return;
+  }
+
+  tabInfo.port.onMessage.removeListener(tabInfo.onMessageHandler);
+  delete tabs[tabId];
 }
 
 function onContentScriptReady(port) {
   const { sender: { tab: { id: tabId } } } = port;
-  port.onMessage.addListener(onContentScriptMessage.bind(null, tabId));
-  disableButton(tabId);
-  removePopup(tabId);
+  ensureTabFlushed(tabId);
+  const tabInfo = {
+    onMessageHandler: onContentScriptMessage.bind(null, tabId),
+    port,
+  };
+  port.onMessage.addListener(tabInfo.onMessageHandler);
+  tabs[tabId] = tabInfo;
+}
+
+function onTabActivated({ tabId }) {
+  const tabInfo = tabs[tabId];
+  currentTabId = tabId;
+
+  if (tabInfo && tabInfo.pageInfo) {
+    applyPageInfo(tabId, tabInfo.pageInfo);
+  } else {
+    disableButton(tabId);
+    removePopup(tabId);
+  }
+}
+
+function onTabRemoved({ tabId }) {
+  ensureTabFlushed(tabId);
+}
+
+function getCurrentTabInfo() {
+  if (!currentTabId) {
+    return null;
+  }
+
+  return tabs[currentTabId];
 }
 
 function dispatchEvents() {
   browser.runtime.onConnect.addListener(onContentScriptReady);
+  browser.tabs.onActivated.addListener(onTabActivated);
+  browser.tabs.onRemoved.addListener(onTabRemoved);
   onMessage({
     popupWasOpened(unusedPayload, unusedSender, sendResponse) {
-      sendResponse(setPopupContent(currentPageInfo));
+      const tabInfo = getCurrentTabInfo();
+
+      if (tabInfo && tabInfo.pageInfo) {
+        sendResponse(setPopupContent(tabInfo.pageInfo));
+      }
     },
   });
 }
