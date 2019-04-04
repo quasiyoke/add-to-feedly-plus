@@ -4,6 +4,7 @@
 
 /* eslint-env browser */
 
+import { pageWasProcessed } from './messages';
 import { compose } from './util';
 
 const getFeedLinks = () => (
@@ -39,7 +40,7 @@ function getTitle() {
 }
 
 const port = browser.runtime.connect();
-port.postMessage({
+port.postMessage(pageWasProcessed({
   feeds: getFeeds(),
   title: getTitle(),
-});
+}));

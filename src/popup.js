@@ -1,13 +1,21 @@
 /* eslint-env browser */
 
-const menu = document.querySelector('.menu');
+import {
+  popupWasOpened,
+  sendMessage,
+} from './messages';
+import { createSubscriptionUrl } from './util';
 
-function addFeed(feed) {
+function renderFeed(feed) {
   const menuItem = document.createElement('li');
   menuItem.setAttribute('class', 'menu-item');
+
+  const menu = document.querySelector('.menu');
   menu.appendChild(menuItem);
   const button = document.createElement('a');
-  button.setAttribute('href', feed.url);
+  button.setAttribute('href', createSubscriptionUrl(feed.url));
+  button.setAttribute('target', '_blank');
+  button.setAttribute('rel', 'noopener');
   button.setAttribute('title', feed.title);
   button.setAttribute('class', 'button');
   menuItem.appendChild(button);
@@ -15,24 +23,17 @@ function addFeed(feed) {
   button.appendChild(buttonWrap);
   buttonWrap.appendChild(document.createTextNode(feed.title));
   buttonWrap.setAttribute('class', 'button-wrap');
-  button.addEventListener('click', (e) => {
-    e.preventDefault();
-    self.port.emit('feedChosen', feed.url);
-  });
 }
 
 function addTitle(text) {
   const title = document.createElement('h1');
   title.appendChild(document.createTextNode(text));
+
+  const menu = document.querySelector('.menu');
   menu.parentNode.insertBefore(title, menu);
 }
 
-function Feed(options) {
-  this.url = options.url;
-  this.title = options.title || options.url;
-}
-
-Feed.getCommonTitle = (feeds) => {
+const createCommonFeedsTitle = (feeds) => {
   /**
    * The idea behind common title is to get common header for feeds with titles starting identically.
    * Imagine the following feeds list:
@@ -58,7 +59,7 @@ Feed.getCommonTitle = (feeds) => {
     }
   }
   const commonTitle = firstTitle.substr(0, length);
-  if (Feed.isCommonTitleAdsorbing(commonTitle, feeds)) {
+  if (isCommonTitleAdsorbing(commonTitle, feeds)) {
     const match = /^(.+»)[^»]+$/.exec(commonTitle);
     /*
      * For such feeds list:
@@ -127,46 +128,56 @@ Feed.getCommonTitle = (feeds) => {
   return commonTitle;
 };
 
-Feed.isCommonTitleAdsorbing = (commonTitle, feeds) => {
+class Feed {
+  constructor(options) {
+    this.url = options.url;
+    this.title = options.title || options.url;
+  }
+
+  ensureTitle(commonTitleLength) {
+    /**
+    * Ensures the title is trimmed correctly.
+    */
+    this.title = this.title.substr(commonTitleLength);
+  }
+}
+
+const isCommonTitleAdsorbing = (commonTitle, feeds) => {
   /**
-   * Example feeds list:
-   *
-   * - John Doe's blog
-   * - John Doe's blog comments
-   *
-   * In such case straightforward common title will adsorb first feed's title.
-   *
-   * @return bool Is common title adsorbing any feed's title from feeds list.
-   */
+  * Example feeds list:
+  *
+  * - John Doe's blog
+  * - John Doe's blog comments
+  *
+  * In such case straightforward common title will adsorb first feed's title.
+  *
+  * @return bool Is common title adsorbing any feed's title from feeds list.
+  */
   for (let i = 0; i < feeds.length; i += 1) {
     if (commonTitle.length >= feeds[i].title.length) {
       return true;
     }
   }
   return false;
-};
+}
 
-Feed.prototype.ensureTitle = (commonTitleLength) => {
-  /**
-   * Ensures the title is trimmed correctly.
-   */
-  this.title = this.title.substr(commonTitleLength);
-};
-
-function foo(page) {
+function onSetPopupContent({ payload: { feeds, title: pageTitle } }) {
   /* Remove title if present. */
   const titles = document.getElementsByTagName('h1');
   if (titles.length) {
     titles[0].parentNode.removeChild(titles[0]);
   }
 
+  const menu = document.querySelector('.menu');
+
   menu.textContent = '';
-  const commonTitle = Feed.getCommonTitle(page.feeds);
+  let commonTitle = createCommonFeedsTitle(feeds);
   let commonTitleLength;
   if (commonTitle) {
     commonTitleLength = commonTitle.length;
-    /* Trim trailing delimiter char. */
-    const match = /^(.+)[»-\u2012\u2013\u2014]\s*/.exec(commonTitle); // Quotation mark, hyphen-minus, figure dash, en dash, em dash, respectively.
+    // Trim trailing delimiter char.
+    // Quotation mark, hyphen-minus, figure dash, en dash, em dash, respectively.
+    const match = /^(.+)[»-\u2012\u2013\u2014]\s*/.exec(commonTitle);
     if (match) {
       commonTitle = match[1];
     }
@@ -174,9 +185,13 @@ function foo(page) {
   } else {
     commonTitleLength = 0;
   }
-  for (let i = 0; i < page.feeds.length; i += 1) {
-    const feed = new Feed(page.feeds[i]);
+
+  for (let i = 0; i < feeds.length; i += 1) {
+    const feed = new Feed(feeds[i]);
     feed.ensureTitle(commonTitleLength);
-    addFeed(feed);
+    renderFeed(feed);
   }
 }
+
+sendMessage(popupWasOpened())
+  .then(onSetPopupContent);

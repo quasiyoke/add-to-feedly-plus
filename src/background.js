@@ -2,7 +2,15 @@
  * This file is executed once when the extension was loaded.
  */
 
+import {
+  onMessage,
+  sendMessage,
+  setPopupContent,
+} from './messages';
+
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
+
+let currentPageInfo;
 
 function onButtonChange(unusedState) {
   this.state('window', null);
@@ -21,6 +29,7 @@ function onMainPanelShow () {
 }
 
 function showPopup() {
+  console.log('showPopup');
   browser.pageAction.openPopup();
 }
 
@@ -101,10 +110,12 @@ function setPopup(tabId) {
 /**
  * This event handler is triggered when contentScript reports about feeds on the page.
  */
-function onContentScriptMessage(tabId, {
-  feeds,
-  title: pageTitle,
-}) {
+function onContentScriptMessage(tabId, { payload: pageInfo }) {
+  currentPageInfo = pageInfo;
+  const {
+    feeds,
+    title: pageTitle,
+  } = pageInfo;
   console.log('Extension message:', pageTitle, feeds, tabId);
 
   if (feeds.length > 0) {
@@ -126,7 +137,7 @@ function removePopup(tabId) {
   browser.pageAction.setPopup({
     tabId,
     popup: null,
-  })
+  });
 }
 
 function onContentScriptReady(port) {
@@ -138,6 +149,11 @@ function onContentScriptReady(port) {
 
 function dispatchEvents() {
   browser.runtime.onConnect.addListener(onContentScriptReady);
+  onMessage({
+    popupWasOpened(unusedPayload, unusedSender, sendResponse) {
+      sendResponse(setPopupContent(currentPageInfo));
+    },
+  });
 }
 
 dispatchEvents();

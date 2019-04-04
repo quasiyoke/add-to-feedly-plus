@@ -11,3 +11,5 @@ export function compose(...fns) {
     return result;
   };
 }
+
+export const createSubscriptionUrl = feedUrl => `https://feedly.com/i/subscription/feed/${feedUrl}`;
