@@ -12,11 +12,6 @@ const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
 
 const tabs = {};
 
-function showPopup() {
-  console.log('showPopup');
-  browser.pageAction.openPopup();
-}
-
 function enableButton(tabId) {
   browser.pageAction.show(tabId);
 }
@@ -48,17 +43,13 @@ function openFeed(url) {
   });
 }
 
-function onButtonClicked(
-  {
-    feeds,
-    pageTitle,
-  },
-  unusedTab,
-) {
-  if (feeds.length === 1) {
+/**
+ * Handles event: "page action was clicked".
+ * The handler will be fired only if page action's popup wasn't specified.
+ */
+function onButtonClicked({ feeds }, unusedTab) {
+  if (feeds.length > 0) {
     openFeed(feeds[0].url);
-  } else {
-    showPopup();
   }
 }
 
