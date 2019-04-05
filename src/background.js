@@ -53,7 +53,7 @@ const createFeedTitle = ({ title }, pageTitle) => title || pageTitle || '(no tit
 
 function createButtonLabel(feeds, pageTitle) {
   if (feeds.length === 1) {
-    return `Add “${createFeedTitle(feeds[0], pageTitle)}” to Feedly`;
+    return `Add to Feedly: “${createFeedTitle(feeds[0], pageTitle)}”`;
   }
 
   return `${BUTTON_LABEL_DEFAULT} (${feeds.length})`;
