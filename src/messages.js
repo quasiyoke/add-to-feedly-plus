@@ -5,9 +5,11 @@ export function onMessage(handlersMap) {
   }, sender, sendResponse) => {
     const handler = handlersMap[type];
 
-    if (typeof handler === 'function') {
-      handler(payload, sender, sendResponse);
+    if (typeof handler !== 'function') {
+      return undefined;
     }
+
+    return handler(payload, sender, sendResponse);
   });
 }
 

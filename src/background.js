@@ -11,23 +11,6 @@ import { createSubscriptionUrl } from './util';
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
 
 const tabs = {};
-let currentTabId;
-
-function onButtonChange(unusedState) {
-  this.state('window', null);
-  this.checked = !this.checked;
-  if (this.checked) {
-    mainPanel.show({
-      position: button,
-    });
-  } else {
-    mainPanel.hide();
-  }
-}
-
-function onMainPanelShow () {
-  mainPanel.port.emit('show', page);
-}
 
 function showPopup() {
   console.log('showPopup');
@@ -58,17 +41,6 @@ function createButtonLabel(feeds, pageTitle) {
 
   return `${BUTTON_LABEL_DEFAULT} (${feeds.length})`;
 }
-
-// mainPanel.port.on('feedChosen', (url) => {
-//   button.checked = false;
-//   mainPanel.hide();
-//   openFeed(url);
-// });
-
-// tabs.on('open', (tab) => {
-//   tab.on('ready', onContentScriptReady);
-// });
-// tabs.on('activate', onContentScriptReady);
 
 function openFeed(url) {
   browser.tabs.create({
@@ -169,9 +141,8 @@ function onContentScriptReady(port) {
   tabs[tabId] = tabInfo;
 }
 
-function onTabActivated({ tabId }) {
+function refreshTab(tabId) {
   const tabInfo = tabs[tabId];
-  currentTabId = tabId;
 
   if (tabInfo && tabInfo.pageInfo) {
     applyPageInfo(tabId, tabInfo.pageInfo);
@@ -181,30 +152,55 @@ function onTabActivated({ tabId }) {
   }
 }
 
+function onTabActivated({ tabId }) {
+  refreshTab(tabId);
+}
+
+/**
+ * Handles event: "Tab was moved to another window and attached to it".
+ * Popup's contents should be updated on that otherwise it leads to inconsistent popup's content.
+ */
+function onTabAttached(tabId) {
+  // We need to make popup push us "popupWasOpened" event to be able to update it with actual data after attaching.
+  // To do that we're turning popup off and on (yes, that's hacky, baby).
+  removePopup(tabId);
+  refreshTab(tabId);
+}
+
 function onTabRemoved({ tabId }) {
   ensureTabFlushed(tabId);
 }
 
-function getCurrentTabInfo() {
-  if (!currentTabId) {
-    return null;
-  }
+const getActiveTabInfo = () => browser.tabs.query({
+  active: true,
+  currentWindow: true,
+})
+  .then((activeTabs) => {
+    if (activeTabs.length < 1) {
+      return null;
+    }
 
-  return tabs[currentTabId];
+    const [activeTab] = activeTabs;
+    return tabs[activeTab.id];
+  });
+
+function onPopupWasOpened(unusedPayload, unusedSender, sendResponse) {
+  getActiveTabInfo()
+    .then((tabInfo) => {
+      if (tabInfo && tabInfo.pageInfo) {
+        sendResponse(setPopupContent(tabInfo.pageInfo));
+      }
+    });
+  return true; // To indicate that we'll use `sendResponse` asynchronously.
 }
 
 function dispatchEvents() {
   browser.runtime.onConnect.addListener(onContentScriptReady);
   browser.tabs.onActivated.addListener(onTabActivated);
+  browser.tabs.onAttached.addListener(onTabAttached);
   browser.tabs.onRemoved.addListener(onTabRemoved);
   onMessage({
-    popupWasOpened(unusedPayload, unusedSender, sendResponse) {
-      const tabInfo = getCurrentTabInfo();
-
-      if (tabInfo && tabInfo.pageInfo) {
-        sendResponse(setPopupContent(tabInfo.pageInfo));
-      }
-    },
+    popupWasOpened: onPopupWasOpened,
   });
 }
 

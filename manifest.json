@@ -29,5 +29,12 @@
       "19": "assets/icon.svg"
     },
     "browser_style": true
+  },
+  "commands": {
+    "_execute_page_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F"
+      }
+    }
   }
 }
