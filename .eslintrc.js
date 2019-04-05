@@ -2,11 +2,16 @@ module.exports = {
   parser: 'babel-eslint',
   extends: [
     'airbnb-base',
+    'plugin:flowtype/recommended',
   ],
   env: {
     webextensions: true,
   },
+  plugins: [
+    'flowtype',
+  ],
   rules: {
+    'flowtype/no-types-missing-file-annotation': 'off',
     'function-paren-newline': ['error', 'consistent'],
     'import/prefer-default-export': 'off',
     'max-len': ['error', 200],
@@ -17,5 +22,10 @@ module.exports = {
       'varsIgnorePattern': 'unused',
     }],
     'prefer-promise-reject-errors': 'off',
+  },
+  settings: {
+    flowtype: {
+      onlyFilesWithFlowAnnotation: false,
+    },
   },
 };

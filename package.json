@@ -20,14 +20,19 @@
   "scripts": {
     "build": "parcel build src/background.js src/content.js src/popup.js",
     "dev": "parcel build src/background.js src/content.js src/popup.js --no-minify",
-    "test": "npm run test:lint",
-    "test:lint": "eslint src"
+    "test": "npm run test:types && npm run test:lint",
+    "test:lint": "eslint .",
+    "test:types": "flow"
   },
   "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/preset-flow": "^7.0.0",
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-flowtype": "^3.5.1",
     "eslint-plugin-import": "^2.16.0",
+    "flow-bin": "^0.96.0",
     "parcel-bundler": "^1.12.3"
   }
 }
