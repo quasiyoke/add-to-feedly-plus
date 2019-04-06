@@ -4,12 +4,12 @@
 
 /* eslint-env browser */
 
-import { pageWasProcessed } from './messages';
-import { compose } from './util';
+import { pageWasProcessed } from './values/message';
 
-const getFeedLinks = () => (
+const getFeedLinks = (): NodeList<HTMLLinkElement> => (
   // Full MIME types list courtesy to Robert MacLean on Stack Overflow
   // http://stackoverflow.com/a/7001617/2449800
+  // $FlowFixMe
   document.querySelectorAll(`
     link[type="application/rss+xml"]
     , link[type="application/rdf+xml"]
@@ -29,10 +29,7 @@ const createFeeds = feedLinks => Array
     url: feedLink.href,
   }));
 
-const getFeeds = compose(
-  createFeeds,
-  getFeedLinks,
-);
+const getFeeds = () => createFeeds(getFeedLinks());
 
 function getTitle() {
   const titleElement = document.querySelector('title');

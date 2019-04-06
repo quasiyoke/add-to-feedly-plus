@@ -3,7 +3,7 @@
 import {
   popupWasOpened,
   sendMessage,
-} from './messages';
+} from './values/message';
 import { createSubscriptionUrl } from './util';
 
 function renderFeed(feed) {
@@ -11,6 +11,11 @@ function renderFeed(feed) {
   menuItem.setAttribute('class', 'menu-item');
 
   const menu = document.querySelector('.menu');
+
+  if (!menu) {
+    return;
+  }
+
   menu.appendChild(menuItem);
   const feedEl = document.createElement('a');
   feedEl.setAttribute('href', createSubscriptionUrl(feed.url));
@@ -24,8 +29,15 @@ function renderFeed(feed) {
   feedWrap.setAttribute('class', 'feed-wrap');
 }
 
-function onSetPopupContent({ payload: { feeds } }) {
+function onSetPopupContent({ payload }) {
+  // $FlowFixMe
+  const { feeds } = payload;
   const menu = document.querySelector('.menu');
+
+  if (!menu) {
+    return;
+  }
+
   menu.textContent = '';
   feeds.forEach(renderFeed);
 }

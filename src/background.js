@@ -5,7 +5,7 @@
 import {
   onMessage,
   setPopupContent,
-} from './messages';
+} from './values/message';
 import { createSubscriptionUrl } from './util';
 
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
@@ -158,10 +158,6 @@ function onTabAttached(tabId) {
   refreshTab(tabId);
 }
 
-function onTabRemoved({ tabId }) {
-  ensureTabFlushed(tabId);
-}
-
 const getActiveTabInfo = () => browser.tabs.query({
   active: true,
   currentWindow: true,
@@ -189,7 +185,7 @@ function dispatchEvents() {
   browser.runtime.onConnect.addListener(onContentScriptReady);
   browser.tabs.onActivated.addListener(onTabActivated);
   browser.tabs.onAttached.addListener(onTabAttached);
-  browser.tabs.onRemoved.addListener(onTabRemoved);
+  browser.tabs.onRemoved.addListener(ensureTabFlushed);
   onMessage({
     popupWasOpened: onPopupWasOpened,
   });

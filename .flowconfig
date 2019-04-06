@@ -17,3 +17,4 @@ flow-typed
 
 [options]
 all=true
+suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe
