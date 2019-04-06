@@ -1,4 +1,4 @@
-add-to-feedly-plus.xpi
 .cache/
 dist/
 node_modules/
+web-ext-artifacts/
