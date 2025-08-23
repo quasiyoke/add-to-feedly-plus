@@ -4,5 +4,6 @@ export type Feed = {
 };
 
 export function subscriptionUrl(feed: Feed): string {
-  return `https://feedly.com/i/subscription/feed/${feed.url}`;
+  const path = encodeURIComponent(feed.url);
+  return `https://feedly.com/i/subscription/feed%2F${path}`;
 }

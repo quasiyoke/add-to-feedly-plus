@@ -26,7 +26,7 @@ export default tsEslint.config(
       ],
       'vitest/no-hooks': 'off',
       'vitest/prefer-expect-assertions': 'off',
-      '@stylistic/max-len': ['error', { code: 120 }],
+      '@stylistic/max-len': ['error', { code: 120, ignoreUrls: true }],
       '@stylistic/multiline-comment-style': ['error', 'separate-lines'],
     },
     languageOptions: {
