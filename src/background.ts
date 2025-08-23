@@ -15,8 +15,7 @@ import {
   type PageWasProcessedMessage,
   type Page,
 } from '@/bus.ts';
-import { type Feed } from '@/protocol/feed.ts';
-import { createSubscriptionUrl } from '@/util.ts';
+import { subscriptionUrl, type Feed } from '@/protocol/feed.ts';
 
 type Tab = {
   onMessageHandler: () => void;
@@ -59,10 +58,10 @@ function createButtonLabel(feeds: Feed[], pageTitle: string | null) {
   return `${BUTTON_LABEL_DEFAULT} (${String(feeds.length)})`;
 }
 
-function openFeed(url: string) {
+function openFeed(feed: Feed) {
   browser.tabs
     .create({
-      url: createSubscriptionUrl(url),
+      url: subscriptionUrl(feed),
     })
     .catch((err: unknown) => {
       console.error('Failed to open feed', err);
@@ -75,7 +74,7 @@ function openFeed(url: string) {
  */
 function onButtonClicked({ feeds }: Page, _tab: Tabs.Tab) {
   if (feeds.length > 0) {
-    openFeed(feeds[0].url);
+    openFeed(feeds[0]);
   }
 }
 
