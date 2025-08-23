@@ -1,4 +1,4 @@
 export type Feed = {
-  url: string,
-  title: ?string,
+  url: string;
+  title: string | null;
 };

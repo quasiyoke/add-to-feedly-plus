@@ -2,34 +2,31 @@
  * This script will be executed on every browser page's load almost in the "usual" browser scripts' environment.
  */
 
-/* eslint-env browser */
+import browser from 'webextension-polyfill';
 
-import { pageWasProcessed } from './values/message';
+import { pageWasProcessed } from '@/bus.ts';
 
-const getFeedLinks = (): NodeList<HTMLLinkElement> => (
+function getFeedLinks(): NodeListOf<HTMLLinkElement> {
   // Full MIME types list courtesy to Robert MacLean on Stack Overflow
   // http://stackoverflow.com/a/7001617/2449800
-  // $FlowFixMe
-  document.querySelectorAll(`
+  return document.querySelectorAll(`
     link[type="application/rss+xml"]
     , link[type="application/rdf+xml"]
     , link[type="application/atom+xml"]
     , link[type="application/xml"]
     , link[type="text/xml"]
-  `)
-);
+  `);
+}
 
 /**
  * Extracts feeds' info out of `link` DOM nodes.
  */
-const createFeeds = feedLinks => Array
-  .from(feedLinks)
-  .map(feedLink => ({
+function createFeeds(feedLinks: NodeListOf<HTMLLinkElement>) {
+  return Array.from(feedLinks).map((feedLink) => ({
     title: feedLink.getAttribute('title'),
     url: feedLink.href,
   }));
-
-const getFeeds = () => createFeeds(getFeedLinks());
+}
 
 function getTitle() {
   const titleElement = document.querySelector('title');
@@ -37,7 +34,9 @@ function getTitle() {
 }
 
 const port = browser.runtime.connect();
-port.postMessage(pageWasProcessed({
-  feeds: getFeeds(),
-  title: getTitle(),
-}));
+port.postMessage(
+  pageWasProcessed({
+    feeds: createFeeds(getFeedLinks()),
+    title: getTitle(),
+  }),
+);

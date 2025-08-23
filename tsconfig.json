@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+
+    "target": "ESNext",
+    "module": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+
+    "allowJs": false,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "exactOptionalPropertyTypes": true,
+
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

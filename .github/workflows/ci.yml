@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Check source code
+        run: npm run check
+      - name: Check for typos
+        uses: crate-ci/typos@v1.36.2
