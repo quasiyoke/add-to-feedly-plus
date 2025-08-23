@@ -18,22 +18,28 @@
   "homepage": "https://quasiyoke.me/en/add-to-feedly-plus/",
   "private": true,
   "scripts": {
-    "build": "parcel build src/background.js src/content.js src/popup.js --no-source-maps && web-ext build --overwrite-dest && zip --delete web-ext-artifacts/add_to_feedly_plus-*.zip 'src/*.js' 'flow-typed/*.js' package.json package-lock.json",
-    "dev": "parcel build src/background.js src/content.js src/popup.js --no-minify",
-    "test": "npm run test:types && npm run test:lint",
-    "test:lint": "eslint .",
-    "test:types": "flow"
+    "build": "./etc/build.ts && web-ext build --filename add_to_feedly_plus.zip --overwrite-dest --ignore-files=etc src package*.json tsconfig.json **/*.md *.ts",
+    "dev": "chokidar . --command ./etc/build.ts --ignore dist",
+    "check": "npm run check:types && npm run lint:eslint && npm run check:format && npm run build && npm run lint:web-ext",
+    "test": "exit 1",
+    "check:types": "tsc",
+    "check:format": "prettier --check . '!{*,**}.{html,json}'",
+    "lint:eslint": "eslint --max-warnings 0 --flag unstable_native_nodejs_ts_config",
+    "lint:web-ext": "unzip -o web-ext-artifacts/add_to_feedly_plus.zip -d web-ext-artifacts/add_to_feedly_plus && web-ext lint --source-dir web-ext-artifacts/add_to_feedly_plus --warnings-as-errors"
   },
   "devDependencies": {
-    "@babel/core": "^7.4.3",
-    "@babel/preset-flow": "^7.0.0",
-    "babel-eslint": "^10.0.1",
-    "eslint": "^5.16.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-flowtype": "^3.5.1",
-    "eslint-plugin-import": "^2.16.0",
-    "flow-bin": "^0.96.0",
-    "parcel-bundler": "^1.12.3",
-    "web-ext": "^3.0.0"
-  }
+    "@stylistic/eslint-plugin": "^5.2.3",
+    "@types/webextension-polyfill": "^0.12.3",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
+    "chokidar-cli": "^3.0.0",
+    "eslint": "^9.33.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.39.1",
+    "vite": "^7.0.6",
+    "web-ext": "^8.9.0",
+    "webextension-polyfill": "^0.12.0"
+  },
+  "type": "module"
 }

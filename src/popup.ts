@@ -1,12 +1,8 @@
-/* eslint-env browser */
+import { popupWasOpened, sendMessage, type Page } from '@/bus.ts';
+import { createSubscriptionUrl } from '@/util.ts';
+import type { Feed } from '@/protocol/feed.ts';
 
-import {
-  popupWasOpened,
-  sendMessage,
-} from './values/message';
-import { createSubscriptionUrl } from './util';
-
-function renderFeed(feed) {
+function renderFeed(feed: Feed) {
   const menuItem = document.createElement('li');
   menuItem.setAttribute('class', 'menu-item');
 
@@ -29,9 +25,8 @@ function renderFeed(feed) {
   feedWrap.setAttribute('class', 'feed-wrap');
 }
 
-function onSetPopupContent({ payload }) {
-  // $FlowFixMe
-  const { feeds } = payload;
+function onSetPopupContent({ payload }: any) {
+  const { feeds } = payload as Page;
   const menu = document.querySelector('.menu');
 
   if (!menu) {
@@ -42,5 +37,6 @@ function onSetPopupContent({ payload }) {
   feeds.forEach(renderFeed);
 }
 
-sendMessage(popupWasOpened())
-  .then(onSetPopupContent);
+sendMessage(popupWasOpened()).then(onSetPopupContent, (err: unknown) => {
+  console.error('Failed to request popup content', err);
+});

@@ -1,7 +1,5 @@
 # Add to Feedly Plus
 
-[![Build Status](https://travis-ci.org/quasiyoke/add-to-feedly-plus.svg?branch=master)](https://travis-ci.org/quasiyoke/add-to-feedly-plus)
-
 This Firefox extension allows you to add your favorite sites' feeds to [Feedly](https://feedly.com/).
 Add to Feedly Plus is able to handle multiple RSS feeds.
 Clicking on “Add to Feedly” button on the address bar opens menu with all feeds available on the current page.
@@ -11,18 +9,18 @@ Add to Feedly Plus doesn't require much screen space.
 
 ## How to build the extension by yourself?
 
-The folowing instruction was performed on Ubuntu 18.04 successfully:
+The following instruction works on Ubuntu 24.04:
 
 1. Make sure you're using correct version of Nodejs:
 
    ```sh
-   node -v # Should be v11
+   node -v # Should be v22
    ```
 
 1. make sure you're using correct version of NPM:
 
    ```sh
-   npm -v # Should be 6.7
+   npm -v # Should be 10.9
    ```
 
 1. install dependencies:

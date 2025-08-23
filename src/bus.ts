@@ -1,72 +1,69 @@
-import type { Feed } from './feed';
+import browser, { type Runtime } from 'webextension-polyfill';
 
-type PageWasProcessedMessage = {
-  type: 'pageWasProcessed',
-  payload: {
-    feeds: Feed[],
-    title: ?string,
-  },
+import type { Feed } from '@/protocol/feed.ts';
+
+export type PageWasProcessedMessage = {
+  type: 'pageWasProcessed';
+  payload: Page;
 };
-
-type PopupWasOpenedMessage = {
-  type: 'popupWasOpened',
-  payload: null,
+export type PopupWasOpenedMessage = {
+  type: 'popupWasOpened';
+  payload: null;
 };
-
-type SetPopupContentMessage = {
-  type: 'setPopupContent',
-  payload: {
-    feeds: Feed[],
-    title: ?string,
-  },
+export type SetPopupContentMessage = {
+  type: 'setPopupContent';
+  payload: Page;
 };
-
 export type Message =
   | PageWasProcessedMessage
   | PopupWasOpenedMessage
   | SetPopupContentMessage;
 
-type MessageType = $PropertyType<Message, 'type'>;
-type MessagePayload = $PropertyType<Message, 'payload'>;
+export type Page = {
+  feeds: Feed[];
+  title: string | null;
+};
 
-export function onMessage(handlersMap: {
-  [MessageType]: (MessagePayload, WebExtensions$Sender, (Message) => void) => ?boolean,
-}) {
-  browser.runtime.onMessage.addListener((
-    message: mixed,
-    sender: WebExtensions$Sender,
-    sendResponse: (Message) => void,
-  ) => {
-    if (
-      typeof message !== 'object' || !message
-      || typeof message.type !== 'string' || typeof message.payload !== 'object'
-    ) {
-      return undefined;
-    }
+type Handler = (
+  payload: any,
+  sender: Runtime.MessageSender,
+  sendResponse: (response: any) => void,
+) => true | undefined;
 
-    const {
-      type,
-      payload,
-    } = message;
-    // $FlowFixMe
-    const handler = handlersMap[type];
+export function onMessage(handlersMap: Record<string, Handler>) {
+  browser.runtime.onMessage.addListener(
+    (
+      message: unknown,
+      sender: Runtime.MessageSender,
+      sendResponse: (response: any) => void,
+    ): any => {
+      if (
+        message == null ||
+        typeof message !== 'object' ||
+        !('type' in message) ||
+        typeof message.type !== 'string' ||
+        !('payload' in message) ||
+        typeof message.payload !== 'object'
+      ) {
+        return;
+      }
 
-    if (typeof handler !== 'function') {
-      return undefined;
-    }
+      const { type, payload } = message as { type: string; payload: unknown };
+      const handler = handlersMap[type] as Handler | undefined;
 
-    // $FlowFixMe
-    return handler(payload, sender, sendResponse);
-  });
+      if (handler == null) {
+        return;
+      }
+
+      return handler(payload, sender, sendResponse);
+    },
+  );
 }
 
 export const pageWasProcessed = ({
   feeds,
   title,
-}: {
-  feeds: Feed[],
-  title: ?string,
-}): PageWasProcessedMessage => ({
+}: Page): PageWasProcessedMessage => ({
   type: 'pageWasProcessed',
   payload: {
     feeds,
@@ -80,17 +77,13 @@ export const popupWasOpened = (): PopupWasOpenedMessage => ({
 });
 
 export function sendMessage(message: Message): Promise<Message> {
-  // $FlowFixMe
   return browser.runtime.sendMessage(message);
 }
 
 export const setPopupContent = ({
   feeds,
   title,
-}: {
-  feeds: Feed[],
-  title: ?string,
-}): SetPopupContentMessage => ({
+}: Page): SetPopupContentMessage => ({
   type: 'setPopupContent',
   payload: {
     feeds,
