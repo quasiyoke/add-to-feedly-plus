@@ -20,12 +20,12 @@
   "scripts": {
     "build": "./etc/build.ts && web-ext build --filename add_to_feedly_plus.zip --overwrite-dest --ignore-files=etc src package*.json tsconfig.json **/*.md *.ts",
     "dev": "chokidar . --command ./etc/build.ts --ignore dist",
-    "check": "npm run check:types && npm run lint:eslint && npm run check:format && npm run build && npm run lint:web-ext",
-    "test": "exit 1",
+    "check": "npm test && npm run check:types && npm run lint:eslint && npm run check:format && npm run lint:web-ext",
+    "test": "vitest run",
     "check:types": "tsc",
     "check:format": "prettier --check . '!{*,**}.{html,json}'",
     "lint:eslint": "eslint --max-warnings 0 --flag unstable_native_nodejs_ts_config",
-    "lint:web-ext": "unzip -o web-ext-artifacts/add_to_feedly_plus.zip -d web-ext-artifacts/add_to_feedly_plus && web-ext lint --source-dir web-ext-artifacts/add_to_feedly_plus --warnings-as-errors"
+    "lint:web-ext": "npm run build && unzip -o web-ext-artifacts/add_to_feedly_plus.zip -d web-ext-artifacts/add_to_feedly_plus && web-ext lint --source-dir web-ext-artifacts/add_to_feedly_plus --warnings-as-errors"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.2.3",
@@ -34,10 +34,13 @@
     "@typescript-eslint/parser": "^8.39.1",
     "chokidar-cli": "^3.0.0",
     "eslint": "^9.33.0",
+    "eslint-plugin-vitest": "^0.5.4",
+    "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.0.6",
+    "vitest": "^3.2.4",
     "web-ext": "^8.9.0",
     "webextension-polyfill": "^0.12.0"
   },

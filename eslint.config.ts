@@ -2,10 +2,16 @@ import { globalIgnores } from 'eslint/config';
 import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import tsEslint from 'typescript-eslint';
+import vitest from 'eslint-plugin-vitest';
 
 export default tsEslint.config(
   js.configs.recommended,
   tsEslint.configs.strictTypeChecked,
+  {
+    files: ['**/*.test.ts'],
+    plugins: { vitest },
+    rules: vitest.configs.all.rules,
+  },
   {
     plugins: {
       '@stylistic': stylistic,
@@ -18,6 +24,8 @@ export default tsEslint.config(
           argsIgnorePattern: '^_',
         },
       ],
+      'vitest/no-hooks': 'off',
+      'vitest/prefer-expect-assertions': 'off',
       '@stylistic/max-len': ['error', { code: 120 }],
       '@stylistic/multiline-comment-style': ['error', 'separate-lines'],
     },

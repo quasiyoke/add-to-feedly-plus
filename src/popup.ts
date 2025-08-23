@@ -1,6 +1,5 @@
 import { popupWasOpened, sendMessage, type Page } from '@/bus.ts';
-import { createSubscriptionUrl } from '@/util.ts';
-import type { Feed } from '@/protocol/feed.ts';
+import { subscriptionUrl, type Feed } from '@/protocol/feed.ts';
 
 function renderFeed(feed: Feed) {
   const menuItem = document.createElement('li');
@@ -14,7 +13,7 @@ function renderFeed(feed: Feed) {
 
   menu.appendChild(menuItem);
   const feedEl = document.createElement('a');
-  feedEl.setAttribute('href', createSubscriptionUrl(feed.url));
+  feedEl.setAttribute('href', subscriptionUrl(feed));
   feedEl.setAttribute('target', '_blank');
   feedEl.setAttribute('rel', 'noopener');
   feedEl.setAttribute('class', 'feed');

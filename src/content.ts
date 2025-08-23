@@ -7,8 +7,11 @@ import browser from 'webextension-polyfill';
 import { pageWasProcessed } from '@/bus.ts';
 
 function getFeedLinks(): NodeListOf<HTMLLinkElement> {
-  // Full MIME types list courtesy to Robert MacLean on Stack Overflow
-  // http://stackoverflow.com/a/7001617/2449800
+  // Several filters for the `link` `type` attribute are too permissive:
+  // - `application/rdf+xml` is technically a correct MIME type for an RSS feed, as RSS is an RDF format.
+  // - `application/xml`
+  // - `text/xml`
+  // We'll continue to allow them until they start causing problems, as they may help spotting some rare feeds.
   return document.querySelectorAll(`
     link[type="application/rss+xml"]
     , link[type="application/rdf+xml"]
@@ -40,3 +43,5 @@ port.postMessage(
     title: getTitle(),
   }),
 );
+
+export const onlyForTesting = { createFeeds, getFeedLinks };
