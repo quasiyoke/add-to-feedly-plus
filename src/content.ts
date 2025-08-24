@@ -6,26 +6,35 @@ import browser from 'webextension-polyfill';
 
 import { pageWasProcessed } from '@/bus.ts';
 
-function getFeedLinks(): NodeListOf<HTMLLinkElement> {
+function feedLinks(): HTMLLinkElement[] {
   // Several filters for the `link` `type` attribute are too permissive:
   // - `application/rdf+xml` is technically a correct MIME type for an RSS feed, as RSS is an RDF format.
   // - `application/xml`
   // - `text/xml`
   // We'll continue to allow them until they start causing problems, as they may help spotting some rare feeds.
-  return document.querySelectorAll(`
+  return Array.from<HTMLLinkElement>(
+    document.querySelectorAll(`
     link[type="application/rss+xml"]
     , link[type="application/rdf+xml"]
     , link[type="application/atom+xml"]
     , link[type="application/xml"]
     , link[type="text/xml"]
-  `);
+  `),
+  ).filter((link) => {
+    const linkType = link.getAttribute('type')?.toLowerCase();
+    if (linkType !== 'application/xml' && linkType !== 'text/xml') {
+      return true;
+    }
+    const path = new URL(link.href).pathname.toLowerCase();
+    return !path.startsWith('/sitemap');
+  });
 }
 
 /**
  * Extracts feeds' info out of `link` DOM nodes.
  */
-function createFeeds(feedLinks: NodeListOf<HTMLLinkElement>) {
-  return Array.from(feedLinks).map((feedLink) => ({
+function feeds(feedLinks: HTMLLinkElement[]) {
+  return feedLinks.map((feedLink) => ({
     title: feedLink.getAttribute('title'),
     url: feedLink.href,
   }));
@@ -39,9 +48,9 @@ function getTitle() {
 const port = browser.runtime.connect();
 port.postMessage(
   pageWasProcessed({
-    feeds: createFeeds(getFeedLinks()),
+    feeds: feeds(feedLinks()),
     title: getTitle(),
   }),
 );
 
-export const onlyForTesting = { createFeeds, getFeedLinks };
+export const onlyForTesting = { feeds, feedLinks };
