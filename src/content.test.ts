@@ -4,9 +4,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { onlyForTesting as content } from './content.ts';
 
-const { getFeedLinks, createFeeds } = content;
+const { feedLinks, feeds } = content;
 
-describe('getFeedLinks', () => {
+describe('feedLinks', () => {
   beforeEach(clearDocumentHead);
 
   describe('on page without feeds', () => {
@@ -15,7 +15,7 @@ describe('getFeedLinks', () => {
         type: 'application/json',
         href: 'https://blog.mozilla.org/en/wp-json/wp/v2/pages/63618',
       });
-      expect(getFeedLinks()).toHaveLength(0);
+      expect(feedLinks()).toHaveLength(0);
     });
   });
 
@@ -29,7 +29,7 @@ describe('getFeedLinks', () => {
         type: 'application/rss+xml',
         href: 'https://blog.mozilla.org/en/comments/feed/',
       });
-      expect(getFeedLinks()).toHaveLength(2);
+      expect(feedLinks()).toHaveLength(2);
     });
   });
 
@@ -39,7 +39,7 @@ describe('getFeedLinks', () => {
         type: 'application/rdf+xml',
         href: 'https://example.com/feed/',
       });
-      expect(getFeedLinks()).toHaveLength(1);
+      expect(feedLinks()).toHaveLength(1);
     });
   });
 
@@ -49,7 +49,7 @@ describe('getFeedLinks', () => {
         type: 'application/atom+xml',
         href: 'https://blog.rust-lang.org/feed.xml',
       });
-      expect(getFeedLinks()).toHaveLength(1);
+      expect(feedLinks()).toHaveLength(1);
     });
   });
 
@@ -59,7 +59,7 @@ describe('getFeedLinks', () => {
         type: 'application/xml',
         href: 'https://example.com/feed/',
       });
-      expect(getFeedLinks()).toHaveLength(1);
+      expect(feedLinks()).toHaveLength(1);
     });
   });
 
@@ -69,12 +69,48 @@ describe('getFeedLinks', () => {
         type: 'text/xml',
         href: 'https://example.com/feed/',
       });
-      expect(getFeedLinks()).toHaveLength(1);
+      expect(feedLinks()).toHaveLength(1);
+    });
+  });
+
+  describe('on page with sitemap-like links', () => {
+    describe('which have XML type', () => {
+      it('filters them out', () => {
+        appendLink({
+          type: 'application/xml',
+          href: 'https://www.bittorrent.com/sitemap-index.xml',
+        });
+        appendLink({
+          type: 'application/xml',
+          href: 'https://khalilstemmler.com/sitemap.xml',
+        });
+        // Mixed-case link type
+        appendLink({
+          type: 'application/XML',
+          href: 'https://example.com/sitemap.xml',
+        });
+        // Mixed-case URL
+        appendLink({
+          type: 'application/xml',
+          href: 'https://example.com/SiteMap.xml',
+        });
+        expect(feedLinks()).toHaveLength(0);
+      });
+    });
+
+    describe('which have RSS type', () => {
+      it('grabs them', () => {
+        appendLink({
+          type: 'application/rss+xml',
+          href: 'https://example.com/sitemap.xml',
+        });
+        expect(feedLinks()).toHaveLength(1);
+      });
     });
   });
 });
 
-describe('createFeeds', () => {
+describe('feeds', () => {
   beforeEach(clearDocumentHead);
 
   describe('for regular feeds', () => {
@@ -91,7 +127,7 @@ describe('createFeeds', () => {
           title: 'The Mozilla Blog » Feed',
         },
       ]);
-      expect(createFeeds(links)).toStrictEqual([
+      expect(feeds(links)).toStrictEqual([
         {
           url: 'https://blog.rust-lang.org/feed.xml',
           title: 'Rust Blog',
@@ -112,7 +148,7 @@ describe('createFeeds', () => {
           href: 'https://example.com/feed.xml',
         },
       ]);
-      expect(createFeeds(links)[0].title).toBeNull();
+      expect(feeds(links)[0].title).toBeNull();
     });
   });
 
@@ -124,7 +160,7 @@ describe('createFeeds', () => {
           href: 'feed.xml',
         },
       ]);
-      expect(createFeeds(links)[0].url).toBe('http://localhost:3000/feed.xml');
+      expect(feeds(links)[0].url).toBe('http://localhost:3000/feed.xml');
     });
   });
 });
@@ -141,11 +177,8 @@ function appendLink(attrs: Record<string, string>) {
   head.appendChild(linkStub(attrs));
 }
 
-function linkStubs(
-  attrs: Record<string, string>[],
-): NodeListOf<HTMLLinkElement> {
-  // `NodeList` is essentially a read-only `Array` of nodes with limited interface
-  return attrs.map(linkStub) as any as NodeListOf<HTMLLinkElement>;
+function linkStubs(attrs: Record<string, string>[]): HTMLLinkElement[] {
+  return attrs.map(linkStub);
 }
 
 function linkStub(attrs: Record<string, string>): HTMLLinkElement {
