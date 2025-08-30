@@ -2,9 +2,22 @@
  * This script will be executed on every browser page's load almost in the "usual" browser scripts' environment.
  */
 
-import browser from 'webextension-polyfill';
+import { buildBus, type BusWithSource } from '@/bus.ts';
+import type { Page } from '@/protocol/page.ts';
 
-import { pageWasProcessed } from '@/bus.ts';
+export type Bus = BusWithSource<
+  'contentScript',
+  {
+    pageWasShown: { notification: Page };
+  }
+>;
+
+buildBus<Bus>()
+  .withSource('contentScript')
+  .notify('pageWasShown', {
+    feeds: feeds(feedLinks()),
+    title: document.title,
+  });
 
 function feedLinks(): HTMLLinkElement[] {
   // Several filters for the `link` `type` attribute are too permissive:
@@ -39,18 +52,5 @@ function feeds(feedLinks: HTMLLinkElement[]) {
     url: feedLink.href,
   }));
 }
-
-function getTitle() {
-  const titleElement = document.querySelector('title');
-  return titleElement ? titleElement.text : null;
-}
-
-const port = browser.runtime.connect();
-port.postMessage(
-  pageWasProcessed({
-    feeds: feeds(feedLinks()),
-    title: getTitle(),
-  }),
-);
 
 export const onlyForTesting = { feeds, feedLinks };

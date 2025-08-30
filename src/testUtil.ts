@@ -1,4 +1,6 @@
-import { vi } from 'vitest';
+import assert from 'node:assert/strict';
+
+import { beforeAll, afterAll } from 'vitest';
 
 // Create a stub for the `chrome` object to make the `webextension-polyfill` work in tests
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -6,6 +8,21 @@ import { vi } from 'vitest';
 
 const browser = await import('webextension-polyfill');
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-(browser.runtime as any).connect = vi.fn(() => ({
-  postMessage: vi.fn(),
-}));
+(browser.runtime as any).sendMessage = () => {};
+
+export function suppressConsoleError(filter: string) {
+  let consoleError: undefined | ((message: string, ...rest: unknown[]) => void);
+  beforeAll(() => {
+    consoleError = console.error;
+    console.error = (message: string, ...rest: unknown[]) => {
+      if (!message.includes(filter)) {
+        assert(consoleError);
+        consoleError(message, ...rest);
+      }
+    };
+  });
+  afterAll(() => {
+    assert(consoleError);
+    console.error = consoleError;
+  });
+}
