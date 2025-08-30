@@ -9,11 +9,16 @@ import type { Bus as ContentBus } from '@/content.ts';
 import type { Bus as PopupBus } from '@/popup.ts';
 import { subscriptionUrl, type Feed } from '@/protocol/feed.ts';
 import type { Page } from '@/protocol/page.ts';
-import type { Tab } from '@/protocol/tab.ts';
+import {
+  activatedTabId,
+  browserTabId,
+  type Tab,
+  type TabId,
+} from '@/protocol/tab.ts';
 
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
 
-const tabs = new Map<number, Tab>();
+const tabs = new Map<TabId, Tab>();
 
 dispatch();
 
@@ -28,7 +33,7 @@ function dispatch() {
 }
 
 /** Handler for notification: "content script notifies about feeds on the page". */
-function onPageWasShown(page: Page, tabId: number) {
+function onPageWasShown(page: Page, tabId: TabId) {
   tabs.set(tabId, { pageInfo: page });
   applyPageInfo(tabId, page);
 }
@@ -38,19 +43,19 @@ async function retrievePopupContext(): Promise<Page | undefined> {
   return tab?.pageInfo;
 }
 
-function enableButton(tabId: number) {
+function enableButton(tabId: TabId) {
   browser.pageAction.show(tabId).catch((err: unknown) => {
     console.error('Failed to enable page action', err);
   });
 }
 
-function disableButton(tabId: number) {
+function disableButton(tabId: TabId) {
   browser.pageAction.hide(tabId).catch((err: unknown) => {
     console.error('Failed to disable page action', err);
   });
 }
 
-function setButtonLabel(tabId: number, label: string) {
+function setButtonLabel(tabId: TabId, label: string) {
   browser.pageAction.setTitle({
     tabId,
     title: label,
@@ -105,7 +110,7 @@ function dispatchButtonEvents(feedsInfo: Page) {
   browser.pageAction.onClicked.addListener(buttonEventsHandler);
 }
 
-function setPopup(tabId: number) {
+function setPopup(tabId: TabId) {
   browser.pageAction
     .setPopup({
       tabId,
@@ -116,7 +121,7 @@ function setPopup(tabId: number) {
     });
 }
 
-function removePopup(tabId: number) {
+function removePopup(tabId: TabId) {
   browser.pageAction
     .setPopup({
       tabId,
@@ -127,7 +132,7 @@ function removePopup(tabId: number) {
     });
 }
 
-function applyPageInfo(tabId: number, { feeds, title }: Page) {
+function applyPageInfo(tabId: TabId, { feeds, title }: Page) {
   if (feeds.length > 0) {
     enableButton(tabId);
 
@@ -146,11 +151,11 @@ function applyPageInfo(tabId: number, { feeds, title }: Page) {
   });
 }
 
-function onTabRemoved(tabId: number) {
+function onTabRemoved(tabId: TabId) {
   tabs.delete(tabId);
 }
 
-function refreshTab(tabId: number) {
+function refreshTab(tabId: TabId) {
   const page = tabs.get(tabId)?.pageInfo;
   if (page == null) {
     disableButton(tabId);
@@ -160,15 +165,15 @@ function refreshTab(tabId: number) {
   }
 }
 
-function onTabActivated({ tabId }: Tabs.OnActivatedActiveInfoType) {
-  refreshTab(tabId);
+function onTabActivated(activation: Tabs.OnActivatedActiveInfoType) {
+  refreshTab(activatedTabId(activation));
 }
 
 /**
  * Handles event: "Tab was moved to another window and attached to it".
  * Popup's contents should be updated on that otherwise it leads to inconsistent popup's content.
  */
-function onTabAttached(tabId: number) {
+function onTabAttached(tabId: TabId) {
   removePopup(tabId);
   refreshTab(tabId);
 }
@@ -181,7 +186,7 @@ async function getActiveTabInfo() {
   if (activeTabs.length < 1) {
     return null;
   }
-  const [{ id }] = activeTabs;
+  const id = browserTabId(activeTabs[0]);
   if (id == null) {
     console.error(
       'Tab ID must be present since we are not querying foreign tab using the `sessions` API',

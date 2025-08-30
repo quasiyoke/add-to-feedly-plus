@@ -1,5 +1,6 @@
 import browser, { type Runtime } from 'webextension-polyfill';
 
+import { browserTabId, type TabId } from '@/protocol/tab.ts';
 import { assert, assertExhaustive } from '@/util.ts';
 
 type Bus = Record<string, RequestSchema | NotificationSchema>;
@@ -29,11 +30,11 @@ type Handler<S extends RequestSchema | NotificationSchema> =
 
 type RequestHandler<R extends RequestSchema> = (
   request: R['request'],
-  tabId: R['source'] extends 'contentScript' ? number : undefined,
+  tabId: R['source'] extends 'contentScript' ? TabId : undefined,
 ) => Promise<R['response']>;
 type NotificationHandler<N extends NotificationSchema> = (
   notification: N['notification'],
-  tabId: N['source'] extends 'contentScript' ? number : undefined,
+  tabId: N['source'] extends 'contentScript' ? TabId : undefined,
 ) => unknown;
 
 export type Messages<B extends Bus> = Requests<B> | Notifications<B>;
@@ -140,7 +141,7 @@ export function dispatchMessages<B extends Bus>(handlers: Handlers<B>) {
 function senderTabId(
   source: Source,
   sender: Runtime.MessageSender,
-): number | undefined {
+): TabId | undefined {
   switch (source) {
     case 'contentScript': {
       return contentScriptTabId(sender);
@@ -153,12 +154,12 @@ function senderTabId(
   }
 }
 
-function contentScriptTabId(sender: Runtime.MessageSender): number {
+function contentScriptTabId(sender: Runtime.MessageSender): TabId {
   assert(
     sender.tab,
     'Tab must be present since the connection was opened from a content script and the receiver is an extension',
   );
-  const { id: tabId } = sender.tab;
+  const tabId = browserTabId(sender.tab);
   assert(
     tabId,
     'Tab ID must be present since we are not querying foreign tab using the `sessions` API',
