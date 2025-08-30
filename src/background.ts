@@ -2,30 +2,41 @@
  * This file is executed once when the extension was loaded.
  */
 
-import browser, {
-  type PageAction,
-  type Runtime,
-  type Tabs,
-} from 'webextension-polyfill';
+import browser, { type PageAction, type Tabs } from 'webextension-polyfill';
 
-import {
-  onMessage,
-  setPopupContent,
-  type PopupWasOpenedMessage,
-  type PageWasProcessedMessage,
-  type Page,
-} from '@/bus.ts';
+import { dispatchMessages } from '@/bus.ts';
+import type { Bus as ContentBus } from '@/content.ts';
+import type { Bus as PopupBus } from '@/popup.ts';
 import { subscriptionUrl, type Feed } from '@/protocol/feed.ts';
-
-type Tab = {
-  onMessageHandler: () => void;
-  pageInfo?: Page;
-  port: Runtime.Port;
-};
+import type { Page } from '@/protocol/page.ts';
+import type { Tab } from '@/protocol/tab.ts';
 
 const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
 
 const tabs = new Map<number, Tab>();
+
+dispatch();
+
+function dispatch() {
+  browser.tabs.onActivated.addListener(onTabActivated);
+  browser.tabs.onAttached.addListener(onTabAttached);
+  browser.tabs.onRemoved.addListener(onTabRemoved);
+  dispatchMessages<ContentBus & PopupBus>({
+    pageWasShown: onPageWasShown,
+    retrieveContext: retrievePopupContext,
+  });
+}
+
+/** Handler for notification: "content script notifies about feeds on the page". */
+function onPageWasShown(page: Page, tabId: number) {
+  tabs.set(tabId, { pageInfo: page });
+  applyPageInfo(tabId, page);
+}
+
+async function retrievePopupContext(): Promise<Page | undefined> {
+  const tab = await getActiveTabInfo();
+  return tab?.pageInfo;
+}
 
 function enableButton(tabId: number) {
   browser.pageAction.show(tabId).catch((err: unknown) => {
@@ -46,11 +57,11 @@ function setButtonLabel(tabId: number, label: string) {
   });
 }
 
-function createFeedLabel({ title }: Feed, pageTitle: string | null) {
+function createFeedLabel({ title }: Feed, pageTitle: string) {
   return title || pageTitle || '(no title)';
 }
 
-function createButtonLabel(feeds: Feed[], pageTitle: string | null) {
+function createButtonLabel(feeds: Feed[], pageTitle: string) {
   if (feeds.length === 1) {
     return `Add to Feedly: “${createFeedLabel(feeds[0], pageTitle)}”`;
   }
@@ -135,61 +146,8 @@ function applyPageInfo(tabId: number, { feeds, title }: Page) {
   });
 }
 
-/**
- * This event handler is triggered when contentScript reports about feeds on the page.
- */
-function onContentScriptMessage(
-  tabId: number,
-  { payload: pageInfo }: PageWasProcessedMessage,
-) {
-  const tabInfo = tabs.get(tabId);
-
-  if (tabInfo) {
-    tabInfo.pageInfo = pageInfo;
-  }
-
-  applyPageInfo(tabId, pageInfo);
-}
-
-function ensureTabFlushed(tabId: number) {
-  const tabInfo = tabs.get(tabId);
-
-  if (!tabInfo) {
-    return;
-  }
-
-  tabInfo.port.onMessage.removeListener(tabInfo.onMessageHandler);
+function onTabRemoved(tabId: number) {
   tabs.delete(tabId);
-}
-
-function onContentScriptReady(port: Runtime.Port) {
-  const { sender } = port;
-  if (sender == null) {
-    console.error(
-      'Sender must be present since the port was passed to `onConnect` listener',
-    );
-    return;
-  }
-  if (sender.tab == null) {
-    console.error(
-      'Tab must be present since the connection was opened from a content script and the receiver is an extension',
-    );
-    return;
-  }
-  const { id: tabId } = sender.tab;
-  if (tabId == null) {
-    console.error(
-      'Tab ID must be present since we are not querying foreign tab using the `sessions` API',
-    );
-    return;
-  }
-  ensureTabFlushed(tabId);
-  const tab: Tab = {
-    onMessageHandler: onContentScriptMessage.bind(null, tabId) as () => void,
-    port,
-  };
-  port.onMessage.addListener(tab.onMessageHandler);
-  tabs.set(tabId, tab);
 }
 
 function refreshTab(tabId: number) {
@@ -211,8 +169,6 @@ function onTabActivated({ tabId }: Tabs.OnActivatedActiveInfoType) {
  * Popup's contents should be updated on that otherwise it leads to inconsistent popup's content.
  */
 function onTabAttached(tabId: number) {
-  // We need to make popup push us `popupWasOpened` event to be able to update it with actual data after attaching.
-  // To do that we're turning popup off and on (yes, that's hacky, baby).
   removePopup(tabId);
   refreshTab(tabId);
 }
@@ -234,34 +190,3 @@ async function getActiveTabInfo() {
   }
   return tabs.get(id);
 }
-
-function onPopupWasOpened(
-  _payload: PopupWasOpenedMessage,
-  _sender: Runtime.MessageSender,
-  sendResponse: (response: any) => void,
-): true {
-  getActiveTabInfo().then(
-    (tabInfo) => {
-      const page = tabInfo?.pageInfo;
-      if (page != null) {
-        sendResponse(setPopupContent(page));
-      }
-    },
-    (err: unknown) => {
-      console.error('Failed to handle opened popup', err);
-    },
-  );
-  return true; // To indicate that we'll use `sendResponse` asynchronously.
-}
-
-function dispatchEvents() {
-  browser.runtime.onConnect.addListener(onContentScriptReady);
-  browser.tabs.onActivated.addListener(onTabActivated);
-  browser.tabs.onAttached.addListener(onTabAttached);
-  browser.tabs.onRemoved.addListener(ensureTabFlushed);
-  onMessage({
-    popupWasOpened: onPopupWasOpened,
-  });
-}
-
-dispatchEvents();
