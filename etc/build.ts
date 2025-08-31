@@ -8,7 +8,10 @@ import { exit } from 'node:process';
 import { build as buildBundle } from 'vite';
 
 import packageManifest from '../package.json' with { type: 'json' };
-import { PNG_ICON } from '../src/pageAction/const.ts';
+import {
+  COMMAND_NAME as PAGE_ACTION_COMMAND_NAME,
+  PNG_ICON,
+} from '../src/pageAction/const.ts';
 import { assertExhaustive, type ToJsonObject } from '../src/util.ts';
 
 type Extension = {
@@ -197,6 +200,7 @@ async function manifest({ platform, bundlesDir: outputDir }: Extension) {
           default_icon: PNG_ICON,
         },
         icons: PNG_ICON,
+        commands: { [PAGE_ACTION_COMMAND_NAME]: PAGE_ACTION_COMMAND },
       } satisfies ToJsonObject);
       break;
     }
