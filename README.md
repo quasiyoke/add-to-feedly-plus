@@ -1,11 +1,20 @@
 # Add to Feedly Plus
 
-This Firefox extension allows you to add your favorite sites' feeds to [Feedly](https://feedly.com/).
-Add to Feedly Plus is able to handle multiple RSS feeds.
-Clicking on “Add to Feedly” button on the address bar opens menu with all feeds available on the current page.
-Add to Feedly Plus doesn't require much screen space.
+This browser extension allows you to add your favorite sites' RSS or Atom feeds to [Feedly].
+Add to Feedly Plus is able to handle multiple newsfeeds.
 
-[Install it at addons.mozilla.org](https://addons.mozilla.org/en-US/firefox/addon/add-to-feedly-plus/)
+Many websites publish content via RSS or Atom feeds, but the links to them are often hidden in the page's code. This extension makes them easy to find and use.
+
+1. Click the “Add to Feedly” button in your toolbar to instantly see all feeds available on the current page.
+1. Subscribe to any feed with a couple of clicks.
+1. Use the keyboard shortcut `Ctrl+Shift+F` for quick access.
+1. Supports both dark and light browser themes.
+
+Supported browsers:
+
+1. Compatible with WebExtension API:
+   1. [Desktop Firefox][Firefox Addons]
+1. [Chrome][Chrome Web Store]
 
 ## How to build the extension by yourself?
 
@@ -35,8 +44,33 @@ The following instruction works on Ubuntu 24.04:
    npm run build
    ```
 
-1. resulting archive should be in the `web-ext-artifacts` directory:
+1. resulting archive should be in the `dist` directory:
 
    ```sh
-   ls web-ext-artifacts # Should contain add_to_feedly_plus-XXX.zip
+   ls dist # Should contain web-ext.zip
    ```
+
+## How to try a local extension version in debug mode?
+
+1. Build the extension with the following command:
+
+   ```sh
+   npm run build
+   ```
+
+1. Launch the extension in debug mode in the browser:
+   - Desktop Firefox:
+
+     ```sh
+     npx web-ext run -s dist/web-ext/ --devtools
+     ```
+
+   - Chromium:
+
+     ```sh
+     npx web-ext run -s dist/chrome/ -t chromium
+     ```
+
+[Feedly]: https://feedly.com/
+[Firefox Addons]: https://addons.mozilla.org/en-US/firefox/addon/add-to-feedly-plus/
+[Chrome Web Store]: https://chromewebstore.google.com/detail/add-to-feedly-plus/nobjghgocbddnomohngkgebablnfddko/

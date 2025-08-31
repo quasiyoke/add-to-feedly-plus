@@ -1,7 +1,7 @@
 {
   "name": "add-to-feedly-plus",
   "title": "Add to Feedly Plus",
-  "description": "This extension allows you to add your favorite sites' feeds to Feedly. Despite from original add-on this one handles multiple RSS feeds too.",
+  "description": "Simplifies subscribing to RSS & Atom feeds in Feedly. Browse news feeds and subscribe with a couple of clicks.",
   "author": "Petr Ermishkin <quasiyoke@gmail.com> (https://quasiyoke.me)",
   "contributors": [
     "Saeed Moghadam <phpro.ir@gmail.com>",
@@ -18,20 +18,22 @@
   "homepage": "https://quasiyoke.me/en/add-to-feedly-plus/",
   "private": true,
   "scripts": {
-    "build": "./etc/build.ts && web-ext build --filename add_to_feedly_plus.zip --overwrite-dest --ignore-files=etc src package*.json tsconfig.json **/*.md *.ts",
-    "dev": "chokidar . --command ./etc/build.ts --ignore dist",
+    "build": "./etc/build.ts",
+    "dev": "chokidar . --command 'npm run build' --ignore dist",
     "check": "npm test && npm run check:types && npm run lint:eslint && npm run check:format && npm run lint:web-ext",
     "test": "vitest run",
     "check:types": "tsc",
-    "check:format": "prettier --check . '!{*,**}.{html,json}'",
+    "check:format": "prettier --check .",
     "lint:eslint": "eslint --max-warnings 0 --flag unstable_native_nodejs_ts_config",
-    "lint:web-ext": "npm run build && unzip -o web-ext-artifacts/add_to_feedly_plus.zip -d web-ext-artifacts/add_to_feedly_plus && web-ext lint --source-dir web-ext-artifacts/add_to_feedly_plus --warnings-as-errors"
+    "lint:web-ext": "npm run build && ./etc/lintWebExt.ts"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.2.3",
+    "@types/addons-linter": "^6.16.1",
     "@types/webextension-polyfill": "^0.12.3",
     "@typescript-eslint/eslint-plugin": "^8.39.1",
     "@typescript-eslint/parser": "^8.39.1",
+    "addons-linter": "^7.20.0",
     "chokidar-cli": "^3.0.0",
     "eslint": "^9.33.0",
     "eslint-plugin-vitest": "^0.5.4",

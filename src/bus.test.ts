@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import * as timers from 'node:timers/promises';
 
 import { describe, expect, it, vi } from 'vitest';
-import browser from 'webextension-polyfill';
 
 import { suppressConsoleError } from '@/testUtil.ts';
+import browser from '@/webExtension.ts';
 import { dispatchMessages, type BusWithSource } from './bus.ts';
 
 describe('dispatchRuntimeMessages', () => {

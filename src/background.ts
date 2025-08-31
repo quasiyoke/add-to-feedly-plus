@@ -1,24 +1,18 @@
 /**
- * This file is executed once when the extension was loaded.
+ * - In Firefox, this script runs in a persistent background page and stays loaded.
+ * - In Chrome, this runs as a service worker that is loaded on demand and could be unloaded when idle,
+ *   so globals are lost between activations.
  */
 
-import browser, { type PageAction, type Tabs } from 'webextension-polyfill';
-
 import { dispatchMessages } from '@/bus.ts';
+import * as cache from '@/cache.ts';
 import type { Bus as ContentBus } from '@/content.ts';
+import * as pageAction from '@/pageAction/index.ts';
 import type { Bus as PopupBus } from '@/popup.ts';
 import { subscriptionUrl, type Feed } from '@/protocol/feed.ts';
 import type { Page } from '@/protocol/page.ts';
-import {
-  activatedTabId,
-  browserTabId,
-  type Tab,
-  type TabId,
-} from '@/protocol/tab.ts';
-
-const BUTTON_LABEL_DEFAULT = 'Add to Feedly';
-
-const tabs = new Map<TabId, Tab>();
+import { activatedTabId, browserTabId, type TabId } from '@/protocol/tab.ts';
+import browser, { type Tabs } from '@/webExtension.ts';
 
 dispatch();
 
@@ -30,48 +24,22 @@ function dispatch() {
     pageWasShown: onPageWasShown,
     retrieveContext: retrievePopupContext,
   });
+  pageAction.dispatchClick(onButtonClicked);
 }
 
 /** Handler for notification: "content script notifies about feeds on the page". */
 function onPageWasShown(page: Page, tabId: TabId) {
-  tabs.set(tabId, { pageInfo: page });
-  applyPageInfo(tabId, page);
+  cache.storeTab(tabId, { page }).catch((err: unknown) => {
+    console.error('Failed to store tab on content script ready', err);
+  });
+  pageAction.render(tabId, page).catch((err: unknown) => {
+    console.error('Failed to render `pageAction`', err);
+  });
 }
 
 async function retrievePopupContext(): Promise<Page | undefined> {
-  const tab = await getActiveTabInfo();
-  return tab?.pageInfo;
-}
-
-function enableButton(tabId: TabId) {
-  browser.pageAction.show(tabId).catch((err: unknown) => {
-    console.error('Failed to enable page action', err);
-  });
-}
-
-function disableButton(tabId: TabId) {
-  browser.pageAction.hide(tabId).catch((err: unknown) => {
-    console.error('Failed to disable page action', err);
-  });
-}
-
-function setButtonLabel(tabId: TabId, label: string) {
-  browser.pageAction.setTitle({
-    tabId,
-    title: label,
-  });
-}
-
-function createFeedLabel({ title }: Feed, pageTitle: string) {
-  return title || pageTitle || '(no title)';
-}
-
-function createButtonLabel(feeds: Feed[], pageTitle: string) {
-  if (feeds.length === 1) {
-    return `Add to Feedly: “${createFeedLabel(feeds[0], pageTitle)}”`;
-  }
-
-  return `${BUTTON_LABEL_DEFAULT} (${String(feeds.length)})`;
+  const tab = await activeTab();
+  return tab?.page;
 }
 
 function openFeed(feed: Feed) {
@@ -88,85 +56,36 @@ function openFeed(feed: Feed) {
  * Handles event: "`pageAction` button was clicked".
  * The handler will be fired only if `pageAction`'s popup wasn't specified.
  */
-function onButtonClicked({ feeds }: Page, _tab: Tabs.Tab) {
-  if (feeds.length > 0) {
-    openFeed(feeds[0]);
+function onButtonClicked(tab: Tabs.Tab) {
+  const id = browserTabId(tab);
+  if (id == null) {
+    console.error(
+      'Tab ID must be present since we are not querying foreign tab using the `sessions` API',
+    );
+    return;
   }
+  cache.tab(id).then(
+    (tab) => {
+      const feeds = tab?.page?.feeds;
+      if (feeds != null && feeds.length > 0) {
+        openFeed(feeds[0]);
+      }
+    },
+    (err: unknown) => {
+      console.error('Failed to get active tab', err);
+    },
+  );
 }
 
-let buttonEventsHandler:
-  | undefined
-  | ((tab: browser.Tabs.Tab, info: PageAction.OnClickData | undefined) => void);
-
-function dispatchButtonEvents(feedsInfo: Page) {
-  if (buttonEventsHandler) {
-    browser.pageAction.onClicked.removeListener(buttonEventsHandler);
-  }
-
-  buttonEventsHandler = onButtonClicked.bind(null, feedsInfo) as (
-    tab: browser.Tabs.Tab,
-    info: PageAction.OnClickData,
-  ) => void;
-  browser.pageAction.onClicked.addListener(buttonEventsHandler);
-}
-
-function setPopup(tabId: TabId) {
-  browser.pageAction
-    .setPopup({
-      tabId,
-      popup: '../assets/popup.html',
-    })
-    .catch((err: unknown) => {
-      console.error('Failed to set popup', err);
-    });
-}
-
-function removePopup(tabId: TabId) {
-  browser.pageAction
-    .setPopup({
-      tabId,
-      popup: null,
-    })
-    .catch((err: unknown) => {
-      console.error('Failed to remove popup', err);
-    });
-}
-
-function applyPageInfo(tabId: TabId, { feeds, title }: Page) {
-  if (feeds.length > 0) {
-    enableButton(tabId);
-
-    if (feeds.length > 1) {
-      setPopup(tabId);
-    }
-  } else {
-    disableButton(tabId);
-    removePopup(tabId);
-  }
-
-  setButtonLabel(tabId, createButtonLabel(feeds, title));
-  dispatchButtonEvents({
-    feeds,
-    title,
-  });
-}
-
-function onTabRemoved(tabId: TabId) {
-  tabs.delete(tabId);
-}
-
-function refreshTab(tabId: TabId) {
-  const page = tabs.get(tabId)?.pageInfo;
-  if (page == null) {
-    disableButton(tabId);
-    removePopup(tabId);
-  } else {
-    applyPageInfo(tabId, page);
-  }
+async function refreshTab(tabId: TabId) {
+  const tab = await cache.tab(tabId);
+  await pageAction.render(tabId, tab?.page);
 }
 
 function onTabActivated(activation: Tabs.OnActivatedActiveInfoType) {
-  refreshTab(activatedTabId(activation));
+  refreshTab(activatedTabId(activation)).catch((err: unknown) => {
+    console.error('Failed to refresh tab', err);
+  });
 }
 
 /**
@@ -174,24 +93,36 @@ function onTabActivated(activation: Tabs.OnActivatedActiveInfoType) {
  * Popup's contents should be updated on that otherwise it leads to inconsistent popup's content.
  */
 function onTabAttached(tabId: TabId) {
-  removePopup(tabId);
-  refreshTab(tabId);
+  pageAction
+    .togglePopup(tabId, false)
+    .then(async () => {
+      await refreshTab(tabId);
+    })
+    .catch((err: unknown) => {
+      console.error('Failed to handle attached tab', err);
+    });
 }
 
-async function getActiveTabInfo() {
+function onTabRemoved(tabId: TabId) {
+  cache.removeTab(tabId).catch((err: unknown) => {
+    console.error('Failed to ensure tab was flushed', err);
+  });
+}
+
+async function activeTab() {
   const activeTabs = await browser.tabs.query({
     active: true,
     currentWindow: true,
   });
   if (activeTabs.length < 1) {
-    return null;
+    return;
   }
   const id = browserTabId(activeTabs[0]);
   if (id == null) {
     console.error(
       'Tab ID must be present since we are not querying foreign tab using the `sessions` API',
     );
-    return null;
+    return;
   }
-  return tabs.get(id);
+  return await cache.tab(id);
 }

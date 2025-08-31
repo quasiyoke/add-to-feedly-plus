@@ -39,5 +39,5 @@ export default tsEslint.config(
       },
     },
   },
-  globalIgnores(['dist/', 'web-ext-artifacts/']),
+  globalIgnores(['dist/']),
 );
