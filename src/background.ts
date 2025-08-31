@@ -24,7 +24,8 @@ function dispatch() {
     pageWasShown: onPageWasShown,
     retrieveContext: retrievePopupContext,
   });
-  pageAction.dispatchClick(onButtonClicked);
+  pageAction.dispatchClick(onPageActionClicked);
+  pageAction.dispatchCommand(onPageActionCommand);
 }
 
 /** Handler for notification: "content script notifies about feeds on the page". */
@@ -56,7 +57,7 @@ function openFeed(feed: Feed) {
  * Handles event: "`pageAction` button was clicked".
  * The handler will be fired only if `pageAction`'s popup wasn't specified.
  */
-function onButtonClicked(tab: Tabs.Tab) {
+function onPageActionClicked(tab: Tabs.Tab) {
   const id = browserTabId(tab);
   if (id == null) {
     console.error(
@@ -75,6 +76,53 @@ function onButtonClicked(tab: Tabs.Tab) {
       console.error('Failed to get active tab', err);
     },
   );
+}
+
+/**
+ * Handles event: "`pageAction` command (keyboard shortcut) was ordered". Should function as a click on the `pageAction`
+ * button.
+ *
+ * The handler is only applicable to Chrome. In Firefox, we use the built-in implementation `_execute_page_action`.
+ */
+function onPageActionCommand(tab: Tabs.Tab | undefined) {
+  if (tab == null) {
+    return; // If we don't know which tab requested the action, we don't even know which feeds we're talking about.
+  }
+  const id = browserTabId(tab);
+  if (id == null) {
+    console.error(
+      'Tab ID must be present since we are not querying foreign tab using the `sessions` API',
+    );
+    return;
+  }
+  cache
+    .tab(id)
+    .then(async (tab) => {
+      const feeds = tab?.page?.feeds;
+      if (feeds == null) {
+        return;
+      }
+      if (feeds.length === 1) {
+        openFeed(feeds[0]);
+      } else if (feeds.length > 1) {
+        await pageAction.openPopup().catch((err: unknown) => {
+          // https://source.chromium.org/chromium/chromium/src/+/c05ced707f290eff36b86db1fd657d55b688aa46:chrome/browser/extensions/api/extension_action/extension_action_api.cc;l=670
+          if (
+            err instanceof Error &&
+            err.message === 'Could not find an active browser window.'
+          ) {
+            console.debug(
+              "Cannot open the popup. It has already been opened, or it's unclear which browser window to open it in.",
+            );
+            return;
+          }
+          throw err;
+        });
+      }
+    })
+    .catch((err: unknown) => {
+      console.error('Failed to handle `pageAction` command', err);
+    });
 }
 
 async function refreshTab(tabId: TabId) {

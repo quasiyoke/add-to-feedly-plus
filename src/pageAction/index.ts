@@ -16,6 +16,7 @@ import { label as feedLabel, type Feed } from '@/protocol/feed.ts';
 import type { Page } from '@/protocol/page.ts';
 import type { TabId } from '@/protocol/tab.ts';
 import browser, { type Tabs } from '@/webExtension.ts';
+import { COMMAND_NAME } from './const.ts';
 
 export async function render(tabId: TabId, page: Page | undefined) {
   const feeds = page?.feeds ?? [];
@@ -49,6 +50,30 @@ export function dispatchClick(handler: (tab: Tabs.Tab) => void) {
       // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/action/onClicked#addlistenerlistener
       // https://developer.chrome.com/docs/extensions/reference/api/action#event-onClicked
       browser.action.onClicked.addListener(handler);
+      break;
+    default:
+      assertExhaustive(EXTENSION_PLATFORM);
+  }
+}
+
+/**
+ * Specifies handler for the event: "`pageAction` command (keyboard shortcut) was ordered". Should function as a click
+ * on the `pageAction` button.
+ *
+ * The handler is only applicable to Chrome. In Firefox, we use the built-in implementation `_execute_page_action`.
+ */
+export function dispatchCommand(handler: (tab: Tabs.Tab | undefined) => void) {
+  switch (EXTENSION_PLATFORM) {
+    case 'web-ext':
+      break;
+    case 'chrome':
+      browser.commands.onCommand.addListener((name, tab) => {
+        if (name !== COMMAND_NAME) {
+          console.error('Unknown command', name);
+          return;
+        }
+        handler(tab);
+      });
       break;
     default:
       assertExhaustive(EXTENSION_PLATFORM);
@@ -129,6 +154,19 @@ export async function togglePopup(tabId: TabId, enabled: boolean) {
       await browser.action.setPopup(popup);
       break;
     }
+    default:
+      assertExhaustive(EXTENSION_PLATFORM);
+  }
+}
+
+export async function openPopup() {
+  switch (EXTENSION_PLATFORM) {
+    case 'web-ext':
+      await browser.pageAction.openPopup();
+      break;
+    case 'chrome':
+      await browser.action.openPopup();
+      break;
     default:
       assertExhaustive(EXTENSION_PLATFORM);
   }

@@ -1,4 +1,11 @@
 /**
+ * A name for the `pageAction` command (keyboard shortcut). The command should function as a click on the `pageAction`
+ * button. This command name is only applicable to Chrome. In Firefox, we use the built-in command implementation
+ * `_execute_page_action`.
+ */
+export const COMMAND_NAME = 'execute-page-action';
+
+/**
  * Chrome supports neither SVG nor WebP icons:
  * https://developer.chrome.com/docs/extensions/reference/manifest/icons
  * https://crbug.com/29683
