@@ -1,10 +1,9 @@
-import type { Tabs } from 'webextension-polyfill';
-
 import type { Brand } from '@/util.ts';
 import type { Page } from '@/protocol/page.ts';
+import type { Tabs } from '@/webExtension.ts';
 
 export type Tab = {
-  pageInfo?: Page;
+  page?: Page;
 };
 
 export type TabId = Brand<'TabId', number>;

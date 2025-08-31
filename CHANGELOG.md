@@ -11,6 +11,10 @@ Add to Feedly Plus adheres to [Semantic Versioning](https://semver.org/spec/v2.0
 - Fix subscription links: aggregator now URL-encodes feed URL in it.
 - Stop considering XML sitemaps as feeds ([#4](https://github.com/quasiyoke/add-to-feedly-plus/issues/4)).
 
+### Added
+
+- Extension version for the Chrome browser platform.
+
 ## 2.0.0 - 2019-04-06
 
 ### Changed

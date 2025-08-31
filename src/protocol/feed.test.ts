@@ -1,6 +1,38 @@
 import { describe, expect, it } from 'vitest';
 
-import { subscriptionUrl, type Feed } from './feed.ts';
+import { label, subscriptionUrl, type Feed } from './feed.ts';
+
+describe('label', () => {
+  describe('for feed with a title', () => {
+    it('returns the title', () => {
+      const feed = feedStubWithTitle('Example feed');
+      expect(label(feed, 'Example blog')).toBe('Example feed');
+    });
+  });
+
+  describe('for feed without title', () => {
+    describe('when title is null', () => {
+      it('returns page title', () => {
+        const feed = feedStubWithTitle(null);
+        expect(label(feed, 'Example blog')).toBe('Example blog');
+      });
+    });
+
+    describe('when title is empty', () => {
+      it('returns page title', () => {
+        const feed = feedStubWithTitle('');
+        expect(label(feed, 'Example blog')).toBe('Example blog');
+      });
+    });
+
+    describe('when page title is empty', () => {
+      it('returns placeholder text', () => {
+        const feed = feedStubWithTitle(null);
+        expect(label(feed, '')).toBe('(no title)');
+      });
+    });
+  });
+});
 
 describe('subscriptionUrl', () => {
   describe('for feed', () => {
@@ -29,6 +61,13 @@ describe('subscriptionUrl', () => {
     });
   });
 });
+
+function feedStubWithTitle(title: string | null): Feed {
+  return {
+    url: 'https://example.com',
+    title,
+  };
+}
 
 function feedStubWithUrl(url: string): Feed {
   return {

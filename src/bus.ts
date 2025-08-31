@@ -1,7 +1,6 @@
-import browser, { type Runtime } from 'webextension-polyfill';
-
 import { browserTabId, type TabId } from '@/protocol/tab.ts';
 import { assert, assertExhaustive } from '@/util.ts';
+import browser, { type Runtime } from '@/webExtension.ts';
 
 type Bus = Record<string, RequestSchema | NotificationSchema>;
 
