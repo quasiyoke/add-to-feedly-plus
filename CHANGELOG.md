@@ -14,6 +14,7 @@ Add to Feedly Plus adheres to [Semantic Versioning](https://semver.org/spec/v2.0
 ### Added
 
 - Extension version for the Chrome browser platform.
+- Dark theme for the popup. Switching to a light/dark theme is determined by the selected browser theme.
 
 ## 2.0.0 - 2019-04-06
 
