@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 
-import { beforeAll, afterAll } from 'vitest';
+import { beforeAll, afterAll, beforeEach, describe } from 'vitest';
+
+// We use the `chrome` platform in tests so that `webextension-polyfill` is being activated
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+(globalThis as any).EXTENSION_PLATFORM = 'chrome';
+beforeEach(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  (globalThis as any).EXTENSION_PLATFORM = 'chrome';
+});
 
 // Create a stub for the `chrome` object to make the `webextension-polyfill` work in tests
 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -24,5 +32,30 @@ export function suppressConsoleError(filter: string) {
   afterAll(() => {
     assert(consoleError);
     console.error = consoleError;
+  });
+}
+
+export function onEveryPlatform(test: () => void) {
+  inWebExtension(test);
+  inChrome(test);
+}
+
+export function inWebExtension(test: () => void) {
+  describe('in WebExtension', () => {
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (globalThis as any).EXTENSION_PLATFORM = 'web-ext';
+    });
+    test();
+  });
+}
+
+export function inChrome(test: () => void) {
+  describe('in Chrome', () => {
+    beforeEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (globalThis as any).EXTENSION_PLATFORM = 'chrome';
+    });
+    test();
   });
 }

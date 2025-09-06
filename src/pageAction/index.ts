@@ -5,9 +5,19 @@
  * for our extension, as the feed subscription button is relevant only for certain pages — this is the canonical use
  * of `pageAction`, exemplified in the documentation.
  *
- * `pageAction` is natively supported by Firefox, but for Chrome, we are forced to provide equivalent functionality
- * through `chrome.action` — a button displayed apart from the omnibox, which is always visible if the extension
- * was pinned.
+ * - Desktop Firefox — OK.
+ *
+ * - Chrome — was supported only for manifest v. ≤ 2:
+ *   https://developer.chrome.com/docs/extensions/mv2/reference/pageAction — so we're forced to use `action` instead
+ *   — a button displayed apart from the omnibox, which is always visible if the extension was pinned.
+ *
+ * - Firefox for Android — supports the `pageAction` API, displays it under the "Extensions" menu item.
+ *
+ *   Minor detail: starting with Firefox for Android v. 135 (under `menu-redesign` flag, was enabled by default
+ *   since v. 142), `pageAction` is not displayed and there's no programmatic way to determine whether it was displayed,
+ *   other than checking the browser version: https://bugzil.la/1984835 — the fix for this bug landed in Firefox v. 144.
+ *   Unfortunately, providing proper support for the affected Firefox versions is impossible. Including both `action`
+ *   and `page_action` in the manifest will cause the browser to display the extension in the menu twice.
  */
 
 import packageManifest from '@/../package.json' with { type: 'json' };
@@ -22,21 +32,56 @@ export async function render(tabId: TabId, page: Page | undefined) {
   const feeds = page?.feeds ?? [];
   await Promise.all([
     toggle(tabId, feeds.length > 0),
-    setLabel(tabId, label(feeds, page?.title)),
+    setBadge(tabId, feeds),
+    setLabel(tabId, feeds, page?.title),
     togglePopup(tabId, feeds.length > 1),
   ]);
 }
 
 const NO_FEEDS_LABEL = `${packageManifest.title} (no feeds)`;
 
-function label(feeds: Feed[], pageTitle: string | undefined): string {
+function pageActionLabel(feeds: Feed[], pageTitle: string | undefined): string {
+  switch (feeds.length) {
+    case 0:
+      // - Desktop Firefox — not substantial, `pageAction` button will be hidden when there're no feeds.
+      // - Firefox for Android — `pageAction` menu item is visible (grayed out) so it's important to show
+      //   appropriate label.
+      return NO_FEEDS_LABEL;
+    case 1:
+      return `Add to Feedly: “${feedLabel(feeds[0], pageTitle)}”`;
+    default:
+      return `Add to Feedly (${String(feeds.length)})`;
+  }
+}
+
+/** Maximum number of feeds we specify on the badge */
+const MAX_BADGE_COUNT = 9;
+
+function actionLabel(feeds: Feed[], pageTitle: string | undefined): string {
   switch (feeds.length) {
     case 0:
       return NO_FEEDS_LABEL;
     case 1:
       return `Add to Feedly: “${feedLabel(feeds[0], pageTitle)}”`;
     default:
-      return `Add to Feedly (${String(feeds.length)})`;
+      if (feeds.length <= MAX_BADGE_COUNT) {
+        // Don't indicate the number of available feeds: we display it in the badge
+        return packageManifest.title;
+      } else {
+        return `Add to Feedly (${String(feeds.length)})`;
+      }
+  }
+}
+
+function badge(feeds: Feed[]): string | null {
+  if (feeds.length === 0) {
+    return null;
+  } else if (feeds.length <= MAX_BADGE_COUNT) {
+    return String(feeds.length);
+  } else {
+    // There isn't much space on the `action` button, so we nominally indicate "many feeds"
+    // to avoid blocking up the icon
+    return '∞';
   }
 }
 
@@ -101,17 +146,42 @@ async function toggle(tabId: TabId, enabled: boolean) {
   }
 }
 
-async function setLabel(tabId: TabId, label: string) {
-  const details = {
-    tabId,
-    title: label,
-  };
+async function setBadge(tabId: TabId, feeds: Feed[]) {
   switch (EXTENSION_PLATFORM) {
     case 'web-ext':
-      browser.pageAction.setTitle(details);
+      // The WebExtension API doesn't include a built-in way to set a badge for the `pageAction` button.
+      // Instead, we indicate the number of available feeds in the `pageAction` label.
       break;
     case 'chrome':
-      await browser.action.setTitle(details);
+      // We don't change the badge color and its text color. We expect that Chrome by default uses legible
+      // and not too distracting colors.
+      await browser.action.setBadgeText({
+        tabId,
+        text: badge(feeds),
+      });
+      break;
+    default:
+      assertExhaustive(EXTENSION_PLATFORM);
+  }
+}
+
+async function setLabel(
+  tabId: TabId,
+  feeds: Feed[],
+  pageTitle: string | undefined,
+) {
+  switch (EXTENSION_PLATFORM) {
+    case 'web-ext':
+      browser.pageAction.setTitle({
+        tabId,
+        title: pageActionLabel(feeds, pageTitle),
+      });
+      break;
+    case 'chrome':
+      await browser.action.setTitle({
+        tabId,
+        title: actionLabel(feeds, pageTitle),
+      });
       break;
     default:
       assertExhaustive(EXTENSION_PLATFORM);
@@ -123,34 +193,24 @@ const POPUP_PATH = 'assets/popup.html';
 export async function togglePopup(tabId: TabId, enabled: boolean) {
   switch (EXTENSION_PLATFORM) {
     case 'web-ext': {
-      const popup = enabled
-        ? {
-            tabId,
-            popup: POPUP_PATH,
-          }
-        : {
-            tabId,
-            // If an empty string ("") is passed here, the popup is disabled, and the extension will receive
-            // `onClicked` events. If `null` is passed here, the popup is reset to the popup that was specified
-            // in the `page_action` manifest key.
-            // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/pageAction/setPopup#parameters
-            popup: null,
-          };
+      const popup = {
+        tabId,
+        // If an empty string ("") is passed here, the popup is disabled, and the extension will receive
+        // `onClicked` events. If `null` is passed here, the popup is reset to the popup that was specified
+        // in the `page_action` manifest key.
+        // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/pageAction/setPopup#parameters
+        popup: enabled ? POPUP_PATH : null,
+      };
       await browser.pageAction.setPopup(popup);
       break;
     }
     case 'chrome': {
-      const popup = enabled
-        ? {
-            tabId,
-            popup: POPUP_PATH,
-          }
-        : {
-            tabId,
-            // If set to the empty string (""), no popup is shown.
-            // https://developer.chrome.com/docs/extensions/reference/api/action#method-setPopup
-            popup: '',
-          };
+      const popup = {
+        tabId,
+        // If set to the empty string (""), no popup is shown.
+        // https://developer.chrome.com/docs/extensions/reference/api/action#method-setPopup
+        popup: enabled ? POPUP_PATH : '',
+      };
       await browser.action.setPopup(popup);
       break;
     }
@@ -172,4 +232,4 @@ export async function openPopup() {
   }
 }
 
-export const onlyForTesting = { label };
+export const onlyForTesting = { badge, pageActionLabel, actionLabel };
