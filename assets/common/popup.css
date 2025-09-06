@@ -1,0 +1,89 @@
+html {
+  margin: 0;
+  padding: 0;
+}
+
+/* Switching to a light/dark theme is determined by the selected browser theme. */
+
+@media (prefers-color-scheme: light) {
+  html {
+    --color-white: #fff;
+    --color-gray-05: #eaeaea;
+    --color-gray-20: #ccc;
+    --color-black: #000;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    --color-white: #000;
+    --color-gray-05: #151515;
+    --color-gray-20: #333;
+    --color-black: #fff;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--color-gray-20);
+  box-sizing: padding-box;
+  overflow-x: hidden;
+  background: var(--color-white);
+  font: 16px sans-serif;
+  max-width: 800px;
+}
+
+/*
+ * Chrome displays the popup without a border, so the popup's background sometimes blends with the page.
+ * Firefox already adds a border to the popup, so we need to add one only for Chrome.
+ */
+@-moz-document url-prefix() {
+  body {
+    border: none;
+  }
+}
+
+.feed,
+.feed:link,
+.feed:visited {
+  display: block;
+  border: none;
+  padding: 8px 11px;
+  width: 100%;
+  border-radius: 3px;
+  box-sizing: border-box;
+  background: var(--color-gray-05);
+  text-decoration: none;
+  color: var(--color-black);
+}
+
+.feed-wrap {
+  margin: 0 auto;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed:hover {
+  background: var(--color-gray-20);
+}
+
+.feed:active {
+  background: var(--color-white);
+}
+
+.feed::-moz-focus-inner {
+  border: 0;
+}
+
+.menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item + .menu-item {
+  margin-top: 3px;
+}
