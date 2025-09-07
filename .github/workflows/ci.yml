@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - '**'
+    tags:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      publishing_catalog:
+        description: Publishing extension catalog
+        required: true
+        type: string
+        options:
+          - firefox_addons
+          - chrome_web_store
 
 jobs:
   check:
@@ -22,3 +33,47 @@ jobs:
         run: npm run check
       - name: Check for typos
         uses: crate-ci/typos@v1.36.2
+
+  publish:
+    name: Publish
+    if: startsWith(github.ref, 'refs/tags/') || inputs.publishing_catalog
+    needs: check
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Pack sources archive for review
+        run: |-
+          zip --recurse-paths \
+            /tmp/sources.zip . \
+            --exclude '.git/*'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Upload to Firefox Addons
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publishing_catalog == 'firefox_addons'
+        run: |-
+          npx web-ext sign \
+            --channel listed \
+            --source-dir dist/web-ext/ \
+            --upload-source-code /tmp/sources.zip \
+            --artifacts-dir dist/ \
+            --api-key '${{ secrets.FIREFOX_ADDONS_JWT_ISSUER_KEY }}' \
+            --api-secret '${{ secrets.FIREFOX_ADDONS_JWT_SECRET }}' \
+            --no-config-discovery \
+            --no-input \
+            --verbose
+      - name: Upload to Chrome Web Store
+        if: startsWith(github.ref, 'refs/tags/') || inputs.publishing_catalog == 'chrome_web_store'
+        run: |-
+          npx chrome-webstore-upload \
+            --source dist/chrome/ \
+            --extension-id 'nobjghgocbddnomohngkgebablnfddko' \
+            --client-id '${{ secrets.CHROME_WEB_STORE_CLIENT_ID }}' \
+            --client-secret '${{ secrets.CHROME_WEB_STORE_CLIENT_SECRET }}' \
+            --refresh-token '${{ secrets.CHROME_WEB_STORE_REFRESH_TOKEN }}'
