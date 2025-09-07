@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { exit } from 'node:process';
 
 import { build as buildBundle } from 'vite';
+import webExt from 'web-ext';
 
 import packageManifest from '../package.json' with { type: 'json' };
 import {
@@ -62,6 +63,7 @@ async function buildExtension(extension: Extension) {
     manifest(extension),
     assets(extension),
   ]);
+  await pack(extension);
 }
 
 function bundles({
@@ -230,6 +232,25 @@ async function copyContents(inputDir: string, outputDir: string) {
     return cp(input, output, { recursive: true });
   });
   await Promise.all(contents);
+}
+
+async function pack({ platform, bundlesDir }: Extension) {
+  switch (platform) {
+    case 'web-ext':
+      await webExt.cmd.build({
+        sourceDir: bundlesDir,
+        artifactsDir: OUTPUT_DIR,
+        filename: 'web-ext.zip',
+        overwriteDest: true,
+      });
+      break;
+    case 'chrome':
+      // The `chrome-webstore-upload` utility packs the extension into a ZIP archive by itself before publishing.
+      // Debugging also doesn't require packing the extension.
+      break;
+    default:
+      assertExhaustive(platform);
+  }
 }
 
 async function writeJsonObject(content: ToJsonObject, path: string) {

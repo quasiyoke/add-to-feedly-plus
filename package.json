@@ -35,6 +35,7 @@
     "@typescript-eslint/parser": "^8.39.1",
     "addons-linter": "^7.20.0",
     "chokidar-cli": "^3.0.0",
+    "chrome-webstore-upload-cli": "^3.3.2",
     "eslint": "^9.33.0",
     "eslint-plugin-vitest": "^0.5.4",
     "jsdom": "^26.1.0",
