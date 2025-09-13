@@ -131,8 +131,10 @@ async function manifest({ platform, bundlesDir: outputDir }: Extension) {
        * https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/52#javascript
        * — however, manifest v. 3 support is a way more recent feature of Firefox:
        * https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/109#changes_for_add-on_developers
+       * Firefox v. < 113 did not support the `gecko_android` key in the manifest:
+       * https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Releases/113#changes_for_add-on_developers
        */
-      const MIN_FIREFOX_VERSION = '109.0';
+      const MIN_FIREFOX_VERSION = '113.0';
       const ICON = 'assets/icon.svg';
       Object.assign(manifest, {
         background: {
@@ -168,15 +170,30 @@ async function manifest({ platform, bundlesDir: outputDir }: Extension) {
             // https://extensionworkshop.com/documentation/develop/firefox-builtin-data-consent/
             data_collection_permissions: { required: ['none'] },
           },
+          // Extension's support for the Firefox for Android is declared just using the object
+          // under the key `gecko_android`:
+          // https://extensionworkshop.com/documentation/publish/version-compatibility/
+          gecko_android: {
+            // It seems that both variants of Firefox have synchronized version numbering
+            strict_min_version: MIN_FIREFOX_VERSION,
+          },
         },
         // Despite Firefox supporting SVG for extension icons, it requires specifying several keys for different
         // icon sizes:
         // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/icons#svg
         icons: { '16': ICON, '32': ICON, '48': ICON, '64': ICON },
-        // `_execute_page_action` turns on a special handler implemented only in Firefox. It functions as a click
-        // on the `pageAction` button:
-        // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#special_shortcuts
-        commands: { _execute_page_action: PAGE_ACTION_COMMAND },
+        // Firefox for Android displays a warning in the Developer Tools when processing a manifest with commands:
+        // "Warning processing `commands`: An unexpected property was found in the WebExtension manifest".
+        // This is because the manifest key `commands` is not supported in Firefox for Android as of v. 143:
+        // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#browser_compatibility
+        // Since the same manifest is used for both desktop and Android versions of Firefox, we cannot remove `commands`
+        // from the manifest.
+        commands: {
+          // `_execute_page_action` turns on a special handler implemented only in Firefox. It functions as a click
+          // on the `pageAction` button:
+          // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#special_shortcuts
+          _execute_page_action: PAGE_ACTION_COMMAND,
+        },
       } satisfies ToJsonObject);
       break;
     }

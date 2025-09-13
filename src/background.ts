@@ -23,6 +23,7 @@ function dispatch() {
   dispatchMessages<ContentBus & PopupBus>({
     pageWasShown: onPageWasShown,
     retrieveContext: retrievePopupContext,
+    openFeed,
   });
   pageAction.dispatchClick(onPageActionClicked);
   pageAction.dispatchCommand(onPageActionCommand);
