@@ -14,6 +14,7 @@ Supported browsers:
 
 1. Compatible with WebExtension API:
    1. [Desktop Firefox][Firefox Addons]
+   1. [Firefox for Android][Firefox Addons]
 1. [Chrome][Chrome Web Store]
 
 ## How to build the extension by yourself?
@@ -65,6 +66,21 @@ The following instruction works on Ubuntu 24.04:
      npx web-ext run -s dist/web-ext/ --devtools
      ```
 
+   - Firefox for Android:
+     1. [Set up your computer and Android device][Set up Android].
+
+     1. Print a list of connected Android devices and their IDs:
+
+        ```sh
+        adb devices
+        ```
+
+     1. Launch the extension on the specified device:
+
+        ```sh
+        npx web-ext run -s dist/web-ext/ -t firefox-android --adb-device <DEVICE> --firefox-apk org.mozilla.fenix
+        ```
+
    - Chromium:
 
      ```sh
@@ -74,3 +90,4 @@ The following instruction works on Ubuntu 24.04:
 [Feedly]: https://feedly.com/
 [Firefox Addons]: https://addons.mozilla.org/en-US/firefox/addon/add-to-feedly-plus/
 [Chrome Web Store]: https://chromewebstore.google.com/detail/add-to-feedly-plus/nobjghgocbddnomohngkgebablnfddko/
+[Set up Android]: https://extensionworkshop.com/documentation/develop/developing-extensions-for-firefox-for-android/#set-up-your-computer-and-android-emulator-or-device

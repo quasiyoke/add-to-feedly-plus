@@ -27,6 +27,7 @@ export default tsEslint.config(
       'vitest/max-expects': 'off',
       'vitest/no-hooks': 'off',
       'vitest/prefer-expect-assertions': 'off',
+      'vitest/prefer-to-be-falsy': 'off',
       'vitest/prefer-to-be-truthy': 'off',
       'vitest/require-hook': 'off',
       '@stylistic/max-len': ['error', { code: 120, ignoreUrls: true }],

@@ -10,10 +10,12 @@ Add to Feedly Plus adheres to [Semantic Versioning](https://semver.org/spec/v2.0
 - Switch sources to TypeScript from Flow.js typings.
 - Fix subscription links: aggregator now URL-encodes feed URL in it.
 - Stop considering XML sitemaps as feeds ([#4](https://github.com/quasiyoke/add-to-feedly-plus/issues/4)).
+- Put the direct feed URLs in the links within the popup instead of a link encoded for the aggregator, so they are easier to preview on hover.
 
 ### Added
 
 - Extension version for the Chrome browser platform.
+- Support for Firefox for Android.
 - Dark theme for the popup. Switching to a light/dark theme is determined by the selected browser theme.
 
 ## 2.0.0 - 2019-04-06
