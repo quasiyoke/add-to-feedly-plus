@@ -12,6 +12,7 @@ import packageManifest from '../package.json' with { type: 'json' };
 import {
   COMMAND_NAME as PAGE_ACTION_COMMAND_NAME,
   PNG_ICON,
+  GRAY_PNG_ICON,
 } from '../src/pageAction/const.ts';
 import { assertExhaustive, type ToJsonObject } from '../src/util.ts';
 
@@ -220,7 +221,7 @@ async function manifest({ platform, bundlesDir: outputDir }: Extension) {
           // The default state of the extension is when there're no feeds available for subscription, or we haven't
           // received list of them yet. Therefore, the default state is `disabled`.
           default_state: 'disabled',
-          default_icon: PNG_ICON,
+          default_icon: GRAY_PNG_ICON,
         },
         icons: PNG_ICON,
         commands: { [PAGE_ACTION_COMMAND_NAME]: PAGE_ACTION_COMMAND },

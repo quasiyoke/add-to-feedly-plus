@@ -26,7 +26,7 @@ import { label as feedLabel, type Feed } from '@/protocol/feed.ts';
 import type { Page } from '@/protocol/page.ts';
 import type { TabId } from '@/protocol/tab.ts';
 import browser, { type Tabs } from '@/webExtension.ts';
-import { COMMAND_NAME } from './const.ts';
+import { COMMAND_NAME, PNG_ICON, GRAY_PNG_ICON } from './const.ts';
 
 export async function render(tabId: TabId, page: Page | undefined) {
   const feeds = page?.feeds ?? [];
@@ -136,9 +136,19 @@ async function toggle(tabId: TabId, enabled: boolean) {
       break;
     case 'chrome':
       if (enabled) {
-        await browser.action.enable(tabId);
+        await Promise.all([
+          browser.action.enable(tabId),
+          // Chrome doesn't display the icon for the `action` button grayed out after the `action` was disabled.
+          // A similar bug: https://crbug.com/40148412
+          // In a discussion about a similar problem with Chrome, they recommend simply changing the icon manually:
+          // https://stackoverflow.com/a/64475504
+          browser.action.setIcon({ tabId, path: PNG_ICON }),
+        ]);
       } else {
-        await browser.action.disable(tabId);
+        await Promise.all([
+          browser.action.disable(tabId),
+          browser.action.setIcon({ tabId, path: GRAY_PNG_ICON }),
+        ]);
       }
       break;
     default:
