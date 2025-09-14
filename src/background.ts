@@ -11,15 +11,13 @@ import * as pageAction from '@/pageAction/index.ts';
 import type { Bus as PopupBus } from '@/popup.ts';
 import { subscriptionUrl, type Feed } from '@/protocol/feed.ts';
 import type { Page } from '@/protocol/page.ts';
-import { activatedTabId, browserTabId, type TabId } from '@/protocol/tab.ts';
+import { browserTabId, type TabId } from '@/protocol/tab.ts';
 import browser, { type Tabs } from '@/webExtension.ts';
 
 dispatch();
 
 function dispatch() {
-  browser.tabs.onActivated.addListener(onTabActivated);
-  browser.tabs.onAttached.addListener(onTabAttached);
-  browser.tabs.onRemoved.addListener(onTabRemoved);
+  dispatchTabs();
   dispatchMessages<ContentBus & PopupBus>({
     pageWasShown: onPageWasShown,
     retrieveContext: retrievePopupContext,
@@ -27,6 +25,27 @@ function dispatch() {
   });
   pageAction.dispatchClick(onPageActionClicked);
   pageAction.dispatchCommand(onPageActionCommand);
+}
+
+function dispatchTabs() {
+  browser.tabs.onAttached.addListener(onTabAttached);
+  browser.tabs.onRemoved.addListener(onTabRemoved);
+  // The WebExtension API allows specifying a filter for tab updates we subscribe to:
+  // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/onUpdated#filter
+  // In our case, we are only interested in updates regarding the `status` attribute of the tab:
+  // `filter = { properties: ['status'] }` — can be specified as the second argument during subscription.
+  //
+  // - Desktop Firefox supports the `filter`.
+  // - Firefox for Android – attempt to subscribe with a `filter` results in the error "Incorrect argument types
+  //   for tabs.onUpdated".
+  // - Chrome does not support the `filter`:
+  //   https://developer.chrome.com/docs/extensions/reference/api/tabs#event-onUpdated
+  //   — and attempting to specify `filter` as an extraneous argument (since it's usually harmless and simply ignored
+  //   — the `filter` could start working in future Chrome versions) leads to an error: "TypeError: This event
+  //   does not support filters".
+  //
+  // For this reason (mainly due to Firefox for Android), we are subscribing without using a filter in all browsers.
+  browser.tabs.onUpdated.addListener(onTabUpdated);
 }
 
 /** Handler for notification: "content script notifies about feeds on the page". */
@@ -126,15 +145,38 @@ function onPageActionCommand(tab: Tabs.Tab | undefined) {
     });
 }
 
-async function refreshTab(tabId: TabId) {
-  const tab = await cache.tab(tabId);
-  await pageAction.render(tabId, tab?.page);
-}
-
-function onTabActivated(activation: Tabs.OnActivatedActiveInfoType) {
-  refreshTab(activatedTabId(activation)).catch((err: unknown) => {
-    console.error('Failed to refresh tab', err);
+function onTabUpdated(
+  tabId: TabId,
+  change: Tabs.OnUpdatedChangeInfoType,
+  tab: Tabs.Tab,
+) {
+  // When a user navigates to a link, the typical sequence of events is as follows:
+  // 1. Tab status = "loading" → we clear the cache of feeds available in the tab.
+  // 2. The page loads, the content script executes, we obtain the current list of feeds from the content script →
+  //    we add the feeds related to the tab to the cache.
+  // 3. Tab status = "complete" → we do nothing.
+  if (change.status == null || change.status === 'complete') {
+    return;
+  }
+  cache.removeTab(tabId).catch((err: unknown) => {
+    console.error('Failed removing tab from the cache', tab, change, err);
   });
+  // In Firefox for Android, the popup appears in an overlay that functions as a tab, and for which typical tab events,
+  // including `onUpdated`, also occur. Attempting to toggle a `pageAction` for such a "tab" results
+  // in an "Invalid tab ID" error. Fortunately, `pageAction` was never enabled for popups and other utility pages
+  // (without a URL or with a URL starting with "moz-extension://"), so there's no need to disable it.
+  //
+  // In Firefox, accessing a tab's URL requires a matching host permission (which we requested).
+  // In Chrome, accessing a tab's URL requires a "tabs" permission (which we generally don't need), so we always execute
+  // `pageAction.render()` in Chrome.
+  if (
+    EXTENSION_PLATFORM === 'chrome' ||
+    !(tab.url == null || tab.url.startsWith('moz-extension://'))
+  ) {
+    pageAction.render(tabId, undefined).catch((err: unknown) => {
+      console.error('Failed updated tab handling', change, err);
+    });
+  }
 }
 
 /**
@@ -145,7 +187,8 @@ function onTabAttached(tabId: TabId) {
   pageAction
     .togglePopup(tabId, false)
     .then(async () => {
-      await refreshTab(tabId);
+      const tab = await cache.tab(tabId);
+      await pageAction.render(tabId, tab?.page);
     })
     .catch((err: unknown) => {
       console.error('Failed to handle attached tab', err);

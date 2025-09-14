@@ -12,12 +12,13 @@ export type Bus = BusWithSource<
   }
 >;
 
-buildBus<Bus>()
-  .withSource('contentScript')
-  .notify('pageWasShown', {
+const bus = buildBus<Bus>().withSource('contentScript');
+window.addEventListener('pageshow', () => {
+  bus.notify('pageWasShown', {
     feeds: feeds(feedLinks()),
     title: document.title,
   });
+});
 
 function feedLinks(): HTMLLinkElement[] {
   // Several filters for the `link` `type` attribute are too permissive:
