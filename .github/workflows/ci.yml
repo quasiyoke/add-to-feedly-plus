@@ -63,6 +63,7 @@ jobs:
             --source-dir dist/web-ext/ \
             --upload-source-code /tmp/sources.zip \
             --artifacts-dir dist/ \
+            --amo-metadata dist/web-ext-meta.json \
             --api-key '${{ secrets.FIREFOX_ADDONS_JWT_ISSUER_KEY }}' \
             --api-secret '${{ secrets.FIREFOX_ADDONS_JWT_SECRET }}' \
             --no-config-discovery \
