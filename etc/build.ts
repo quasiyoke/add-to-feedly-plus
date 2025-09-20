@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
-import { cp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { exit } from 'node:process';
 
+import { Change, parser as parseChangelog, Release } from 'keep-a-changelog';
 import { build as buildBundle } from 'vite';
 import webExt from 'web-ext';
 
@@ -63,6 +64,7 @@ async function buildExtension(extension: Extension) {
     ...bundles(extension),
     manifest(extension),
     assets(extension),
+    meta(extension),
   ]);
   await pack(extension);
 }
@@ -273,6 +275,52 @@ async function pack({ platform, bundlesDir }: Extension) {
     default:
       assertExhaustive(platform);
   }
+}
+
+async function meta({ platform }: Extension) {
+  switch (platform) {
+    case 'web-ext': {
+      const changelogRaw = await readFile('CHANGELOG.md', 'utf-8');
+      const release = parseChangelog(changelogRaw).releases[0];
+      if (release.version == null) {
+        console.error('Invalid changelog version');
+        return;
+      }
+      if (release.version !== packageManifest.version) {
+        console.error(
+          `Changelog version "${release.version}" doesn't match package version "${packageManifest.version}"`,
+        );
+        return;
+      }
+      // https://mozilla.github.io/addons-server/topics/api/addons.html#version-create
+      const meta = { release_notes: releaseNotes(release) };
+      await writeJsonObject(meta, join(OUTPUT_DIR, 'web-ext-meta.json'));
+      break;
+    }
+    case 'chrome': {
+      break;
+    }
+    default:
+      assertExhaustive(platform);
+  }
+}
+
+/**
+ * Firefox Addons support only a limited subset of Markdown:
+ * https://extensionworkshop.com/documentation/develop/create-an-appealing-listing/#make-use-of-markdown
+ */
+function releaseNotes(release: Release): string {
+  return Array.from(release.changes.entries())
+    .filter(([_, changes]) => changes.length > 0)
+    .map(([changesType, changes]) => {
+      const changeRows = changes.map((c: Change) => c.toString()).join('\n');
+      return `**${capitalize(changesType)}**\n\n${changeRows}`;
+    })
+    .join('\n\n');
+}
+
+function capitalize(s: string): string {
+  return s.substring(0, 1).toUpperCase() + s.substring(1);
 }
 
 async function writeJsonObject(content: ToJsonObject, path: string) {
