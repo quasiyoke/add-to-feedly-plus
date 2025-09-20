@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Add to Feedly Plus adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 2.1.3 - 2025-08-31
 
 ### Changed
 
